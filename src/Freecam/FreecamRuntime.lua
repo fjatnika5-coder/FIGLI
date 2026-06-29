@@ -358,7 +358,7 @@ function FreecamRuntime:Start()
 		return
 	end
 
-	-- GUARD: PC tidak pernah jalankan custom runtime (pakai Roblox native freecam).
+	-- GUARD: hanya jalan kalau platform memang pakai custom runtime.
 	if not self:_shouldUseCustomRuntime() then
 		return
 	end
