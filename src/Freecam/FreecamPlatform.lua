@@ -55,15 +55,16 @@ function FreecamPlatform.getMode()
 	return FreecamPlatform.Mode.Desktop
 end
 
--- Custom freecam runtime hanya untuk Mobile & Console.
+-- Custom freecam runtime dipakai SEMUA platform (Desktop, Mobile, Console).
+-- Native Roblox freecam hanya developer access, jadi bukan route untuk player.
 function FreecamPlatform.shouldUseCustomRuntime()
-	local mode = FreecamPlatform.getMode()
-	return mode == FreecamPlatform.Mode.Mobile or mode == FreecamPlatform.Mode.Console
+	return true
 end
 
--- PC pakai Roblox built-in developer freecam (Shift+P).
+-- Native Roblox freecam (Shift+P CoreScript) hanya fitur developer bawaan Roblox,
+-- bukan route game untuk player biasa. Selalu false.
 function FreecamPlatform.shouldUseNativeRobloxFreecam()
-	return FreecamPlatform.getMode() == FreecamPlatform.Mode.Desktop
+	return false
 end
 
 return FreecamPlatform

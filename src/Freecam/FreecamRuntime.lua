@@ -36,6 +36,7 @@ local NAV_ADJ_SPEED = 0.75
 local NAV_SHIFT_MUL = 0.25
 local FOCUS_DISTANCE = 5 -- dekat biar grass tetap render di sekitar kamera
 
+local DESKTOP_TOGGLE_ACTION = "SummitFreecamDesktopToggle"
 local CONSOLE_TOGGLE_ACTION = "SummitFreecamConsoleToggle"
 local CONSOLE_EXIT_ACTION = "SummitFreecamConsoleExit"
 
@@ -80,7 +81,6 @@ function FreecamRuntime.new(refs)
 	self._refs = refs or {}
 	self._janitor = Janitor.new()
 	self._captureJanitor = Janitor.new()
-	self._infoJanitor = nil
 	self._active = false
 	self._hidden = false
 	self._bound = false
@@ -243,76 +243,36 @@ function FreecamRuntime:_forceUnlockMouse()
 end
 
 -- ============================================================
--- Desktop (PC) route: Roblox native freecam only.
+-- Desktop route: custom freecam dengan hotkey Shift+P.
 -- ============================================================
 
-function FreecamRuntime:_showDesktopInfo()
-	local playerGui = LocalPlayer:FindFirstChild("PlayerGui")
-	if not playerGui then
-		return
-	end
-
-	if self._infoJanitor then
-		self._infoJanitor:Cleanup()
-	else
-		self._infoJanitor = Janitor.new()
-		self._janitor:Add(self._infoJanitor, "Destroy")
-	end
-
-	local gui = Instance.new("ScreenGui")
-	gui.Name = "SummitFreecamInfo"
-	gui.ResetOnSpawn = false
-	gui.IgnoreGuiInset = true
-	gui.DisplayOrder = 1000
-	gui.Parent = playerGui
-
-	local label = Instance.new("TextLabel")
-	label.AnchorPoint = Vector2.new(0.5, 0)
-	label.Position = UDim2.new(0.5, 0, 0, 24)
-	label.Size = UDim2.new(0, 340, 0, 44)
-	label.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-	label.BackgroundTransparency = 0.15
-	label.TextColor3 = Color3.fromRGB(255, 255, 255)
-	label.Font = Enum.Font.GothamMedium
-	label.TextSize = 16
-	label.Text = "PC pakai Roblox Freecam — tekan Shift+P"
-	label.Parent = gui
-
-	local corner = Instance.new("UICorner")
-	corner.CornerRadius = UDim.new(0, 8)
-	corner.Parent = label
-
-	self._infoJanitor:Add(gui, "Destroy")
-	task.delay(2.5, function()
-		if gui then
-			gui:Destroy()
+function FreecamRuntime:_bindDesktopHotkey()
+	-- Hotkey Shift+P. P-polos sengaja TIDAK di-handle supaya Spectate (P tanpa
+	-- modifier) tetap jalan tanpa konflik. Juga jangan trigger saat ketik di textbox.
+	ContextActionService:BindAction(DESKTOP_TOGGLE_ACTION, function(_, inputState)
+		if inputState ~= Enum.UserInputState.Begin then
+			return Enum.ContextActionResult.Pass
 		end
-	end)
-end
-
-function FreecamRuntime:_bindDesktop()
-	-- Tidak ada custom runtime, tidak bind hotkey V, tidak set Scriptable.
-	-- Movement UI mobile tidak ditampilkan.
-	if self._refs.Root then
-		self._refs.Root.Visible = false
-	end
-
-	if self._refs.ToggleBtn then
-		if self._refs.ToggleBtn:IsA("GuiObject") then
-			Hotkeys.setupVisibility(self._refs.ToggleBtn)
+		if UserInputService:GetFocusedTextBox() then
+			return Enum.ContextActionResult.Pass
 		end
-		-- Label hotkey diganti jadi Shift+P (Roblox native freecam).
-		Hotkeys.setText(self._refs.ToggleHotkey or Hotkeys.getContainer(self._refs.ToggleBtn), "Shift+P")
+		local shiftHeld = UserInputService:IsKeyDown(Enum.KeyCode.LeftShift)
+			or UserInputService:IsKeyDown(Enum.KeyCode.RightShift)
+		if not shiftHeld then
+			-- P polos = Spectate, jangan di-sink.
+			return Enum.ContextActionResult.Pass
+		end
+		self:Toggle()
+		return Enum.ContextActionResult.Sink
+	end, false, Enum.KeyCode.P)
 
-		-- Klik tombol di PC hanya kasih info kecil, TIDAK mengaktifkan custom freecam.
-		self._janitor:Add(self._refs.ToggleBtn.Activated:Connect(function()
-			self:_showDesktopInfo()
-		end), "Disconnect")
-	end
+	self._janitor:Add(function()
+		ContextActionService:UnbindAction(DESKTOP_TOGGLE_ACTION)
+	end, true, "FreecamDesktopActionCleanup")
 end
 
 -- ============================================================
--- Custom route (mobile + console).
+-- Custom route (semua platform).
 -- ============================================================
 
 function FreecamRuntime:_bindConsoleActions()
@@ -341,15 +301,17 @@ function FreecamRuntime:_bindConsoleActions()
 	end, true, "FreecamConsoleActionCleanup")
 end
 
-function FreecamRuntime:_bindCustom()
+function FreecamRuntime:_bindCommon()
 	if self._refs.ToggleBtn then
 		if self._refs.ToggleBtn:IsA("GuiObject") then
 			Hotkeys.setupVisibility(self._refs.ToggleBtn)
 		end
-		if self:_isConsole() then
+		if self:_isDesktop() then
+			Hotkeys.setText(self._refs.ToggleHotkey or Hotkeys.getContainer(self._refs.ToggleBtn), "Shift+P")
+		elseif self:_isConsole() then
 			Hotkeys.setText(self._refs.ToggleHotkey or Hotkeys.getContainer(self._refs.ToggleBtn), "Y")
 		else
-			-- Mobile tidak punya keyboard; jangan tampilkan hotkey "V".
+			-- Mobile tidak punya keyboard; jangan tampilkan hotkey teks.
 			Hotkeys.setText(self._refs.ToggleHotkey or Hotkeys.getContainer(self._refs.ToggleBtn), "")
 		end
 
@@ -376,14 +338,6 @@ function FreecamRuntime:_bindCustom()
 		self._janitor:Add(self._refs.CloseBtn.Activated:Connect(function()
 			self:Stop()
 		end), "Disconnect")
-	end
-
-	if self:_isConsole() then
-		self:_bindConsoleActions()
-	end
-
-	if self:_isMobile() then
-		FreecamMobileUI.applySafeArea(self)
 	end
 end
 
@@ -442,6 +396,12 @@ function FreecamRuntime:Start()
 	end
 
 	camera.CameraType = Enum.CameraType.Scriptable
+
+	-- Desktop: lock mouse supaya pan kamera via gerak mouse jalan fullscreen.
+	if self:_isDesktop() then
+		UserInputService.MouseBehavior = Enum.MouseBehavior.LockCurrentPosition
+		UserInputService.MouseIconEnabled = false
+	end
 
 	-- Console: arahkan gamepad selection ke tombol Close supaya tombol A bisa exit.
 	if self:_isConsole() and self._refs.CloseBtn then
@@ -504,10 +464,15 @@ function FreecamRuntime:Bind()
 		self._refs.Root.Visible = false
 	end
 
-	if self:_shouldUseNativeRobloxFreecam() then
-		self:_bindDesktop()
+	-- Semua platform pakai custom runtime; routing hanya beda input hotkey/UI.
+	self:_bindCommon()
+
+	if self:_isConsole() then
+		self:_bindConsoleActions()
+	elseif self:_isMobile() then
+		FreecamMobileUI.applySafeArea(self)
 	else
-		self:_bindCustom()
+		self:_bindDesktopHotkey()
 	end
 end
 

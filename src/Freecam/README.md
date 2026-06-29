@@ -4,14 +4,17 @@ Custom Roblox Freecam (Knit + Janitor) dengan routing per platform.
 
 ## Routing
 
+Semua platform pakai **custom FreecamRuntime**. Native Roblox freecam dianggap
+fitur developer bawaan saja (bukan route untuk player), `shouldUseNativeRobloxFreecam`
+selalu `false`.
+
 | Platform | Deteksi | Behavior |
 |----------|---------|----------|
-| **Desktop / PC** | keyboard + mouse, bukan ten-foot | Roblox **native** developer freecam (Shift+P). Tidak ada custom runtime, tidak Scriptable, tidak bind `V`. Tombol UI hanya menampilkan label `Shift+P` + info kecil saat diklik. |
+| **Desktop / PC** | keyboard + mouse, bukan ten-foot | Custom freecam. Hotkey **`Shift+P`** (P + modifier shift). P-polos sengaja tidak di-handle supaya **Spectate** tetap jalan. Tidak pakai `V`. Tombol UI label `Shift+P`. Mouse di-lock saat aktif (pan via gerak mouse), exit via `Shift+P`. |
 | **Mobile / Tablet** | touch-primary, bukan KB+M, bukan console | Custom freecam (movement UI, touch pan, zoom, hide, close, restore). |
 | **Console** | ten-foot / gamepad-only | Custom freecam via gamepad. LeftThumbstick = gerak, RightThumbstick = pan, R2/L2 = naik/turun, R1/L1 = zoom, `Y` = toggle, `B` / tombol Close = exit. |
 
-Laptop touchscreen punya keyboard+mouse → terdeteksi Desktop (bukan Mobile),
-jadi tidak salah masuk custom freecam.
+Laptop touchscreen punya keyboard+mouse → terdeteksi Desktop (bukan Mobile).
 
 ## Module
 
