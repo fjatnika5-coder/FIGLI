@@ -79,12 +79,13 @@ function CameraDirector:_update()
 	local ease = 1 - (1 - p) * (1 - p)
 	local pushed = self._base * CFrame.new(0, 0, -self._zoom * ease)
 
-	-- Shake lembut via noise (mulus, bukan loncat).
+	-- Shake lembut via noise (mulus, frekuensi rendah, amplitudo kecil -> tidak pusing).
 	if self._shake > 0 then
-		local t = os.clock() * 1.6
-		local nx = (math.noise(t, 0.0) ) * self._shake
-		local ny = (math.noise(0.0, t) ) * self._shake
-		local nz = (math.noise(t, t) ) * self._shake * 0.5
+		local t = os.clock() * 1.1
+		local amt = self._shake * 0.5
+		local nx = math.noise(t, 0.0) * amt
+		local ny = math.noise(0.0, t) * amt
+		local nz = math.noise(t, t) * amt * 0.4
 		pushed = pushed * CFrame.Angles(nx, ny, nz)
 	end
 

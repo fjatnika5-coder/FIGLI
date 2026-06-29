@@ -1,5 +1,5 @@
 --!nonstrict
--- TransitionController: UI overlay (fade/flash/vignette/caption) + blur Lighting.
+-- TransitionController: cover fade/flash + blur + vignette. Caption ditangani TextController.
 -- Semua tween dilacak janitor -> cancel saat cleanup. Tanpa RenderStepped.
 
 local TweenService = game:GetService("TweenService")
@@ -14,7 +14,7 @@ function TransitionController.new(screen, config, lowEnd, janitor)
 	self._config = config
 	self._lowEnd = lowEnd == true
 
-	-- Cover fade/flash (paling atas).
+	-- Cover fade/flash.
 	local cover = Instance.new("Frame")
 	cover.Name = "Cover"
 	cover.Size = UDim2.fromScale(1, 1)
@@ -26,7 +26,19 @@ function TransitionController.new(screen, config, lowEnd, janitor)
 	cover.Parent = screen
 	self._cover = cover
 
-	-- Vignette opsional (gambar bingkai gelap).
+	-- Overlay blur-fallback (semi-transparan) untuk LowEnd / mobile.
+	local soft = Instance.new("Frame")
+	soft.Name = "SoftBlur"
+	soft.Size = UDim2.fromScale(1, 1)
+	soft.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+	soft.BorderSizePixel = 0
+	soft.BackgroundTransparency = 1
+	soft.Visible = false
+	soft.ZIndex = 40
+	soft.Parent = screen
+	self._soft = soft
+
+	-- Vignette opsional.
 	if typeof(config.VignetteImage) == "string" and string.match(config.VignetteImage, "^rbxassetid://%d+$") then
 		local vig = Instance.new("ImageLabel")
 		vig.Name = "Vignette"
@@ -35,31 +47,10 @@ function TransitionController.new(screen, config, lowEnd, janitor)
 		vig.Image = config.VignetteImage
 		vig.ImageTransparency = 1
 		vig.ScaleType = Enum.ScaleType.Stretch
-		vig.ZIndex = 20
+		vig.ZIndex = 18
 		vig.Parent = screen
 		self._vignette = vig
 	end
-
-	-- Caption + UIScale (bounce).
-	local caption = Instance.new("TextLabel")
-	caption.Name = "Caption"
-	caption.AnchorPoint = Vector2.new(0.5, 0.5)
-	caption.BackgroundTransparency = 1
-	caption.TextScaled = true
-	caption.RichText = false
-	caption.Text = ""
-	caption.Visible = false
-	caption.ZIndex = 30
-	caption.Parent = screen
-	local stroke = Instance.new("UIStroke")
-	stroke.Thickness = 2
-	stroke.Parent = caption
-	local cscale = Instance.new("UIScale")
-	cscale.Scale = 1
-	cscale.Parent = caption
-	self._caption = caption
-	self._captionStroke = stroke
-	self._captionScale = cscale
 
 	return self
 end
@@ -85,10 +76,7 @@ function TransitionController:CoverInstant(kind)
 	self._cover.Visible = true
 end
 
-function TransitionController:_setBlur(target, duration)
-	if self._lowEnd then
-		return
-	end
+function TransitionController:_blurReal(target, duration)
 	local blur = Lighting:FindFirstChild("PhotoStoryBlur")
 	if not blur then
 		blur = Instance.new("BlurEffect")
@@ -103,18 +91,48 @@ function TransitionController:_setBlur(target, duration)
 	tw:Play()
 end
 
--- Play(kind, phase, duration). phase "In" = buka tirai, "Out" = tutup tirai.
+function TransitionController:_blurSoft(target, duration)
+	self._soft.Visible = true
+	local info = TweenInfo.new(duration, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+	local tw = TweenService:Create(self._soft, info, { BackgroundTransparency = target })
+	self._janitor:Add(tw, "Cancel")
+	tw:Play()
+end
+
+function TransitionController:ResetBlur()
+	if self._lowEnd then
+		if self._soft.Visible then
+			self:_blurSoft(1, 0.2)
+		end
+	else
+		local blur = Lighting:FindFirstChild("PhotoStoryBlur")
+		if blur then
+			self:_blurReal(0, 0.2)
+		end
+	end
+end
+
 function TransitionController:Play(kind, phase, duration)
 	kind = kind or "FadeBlack"
 	duration = math.max(duration or 0.45, 0.05)
 	local cover = self._cover
 
 	if kind == "Blur" then
-		if phase == "In" then
-			self:_setBlur(0, duration)
+		if self._lowEnd then
+			-- Fallback ringan: overlay putih semi-transparan.
+			if phase == "In" then
+				self:_blurSoft(1, duration)
+			else
+				self:_blurSoft(0.5, duration)
+				task.wait(duration)
+			end
 		else
-			self:_setBlur(self._lowEnd and 0 or 18, duration)
-			task.wait(duration)
+			if phase == "In" then
+				self:_blurReal(0, duration)
+			else
+				self:_blurReal(18, duration)
+				task.wait(duration)
+			end
 		end
 		return
 	end
@@ -138,14 +156,6 @@ function TransitionController:Play(kind, phase, duration)
 	end
 end
 
--- Bersihkan blur (mis. sebelum scene yang TransitionIn-nya bukan Blur).
-function TransitionController:ResetBlur()
-	local blur = Lighting:FindFirstChild("PhotoStoryBlur")
-	if blur then
-		self:_setBlur(0, 0.2)
-	end
-end
-
 function TransitionController:ShowVignette(on, duration)
 	if not self._vignette then
 		return
@@ -158,83 +168,6 @@ function TransitionController:ShowVignette(on, duration)
 	local tw = TweenService:Create(self._vignette, info, { ImageTransparency = on and 0.15 or 1 })
 	self._janitor:Add(tw, "Cancel")
 	tw:Play()
-end
-
--- Susun caption untuk scene (belum animasi).
-function TransitionController:SetCaption(textCfg)
-	local caption = self._caption
-	local d = self._config.TextDefaults
-	if not textCfg or not textCfg.Text or textCfg.Text == "" then
-		caption.Visible = false
-		caption.Text = ""
-		return
-	end
-	caption.Visible = true
-	caption.Position = textCfg.Position or d.Position
-	caption.Size = textCfg.Size or d.Size
-	caption.Font = textCfg.Font or d.Font
-	caption.TextColor3 = textCfg.TextColor3 or d.TextColor3
-	self._captionStroke.Color = textCfg.StrokeColor3 or d.StrokeColor3
-	caption.Text = textCfg.Text
-
-	local fade = textCfg.Fade == true
-	caption.TextTransparency = fade and 1 or 0
-	self._captionStroke.Transparency = fade and 1 or (textCfg.StrokeTransparency or d.StrokeTransparency)
-	caption.MaxVisibleGraphemes = textCfg.Typewriter and 0 or -1
-	self._captionScale.Scale = textCfg.Bounce and 0.85 or 1
-end
-
--- Animasikan caption (delay StartTime, fade, bounce, typewriter). Cancellable via token.
-function TransitionController:PlayCaption(textCfg, token)
-	if not textCfg or not textCfg.Text or textCfg.Text == "" then
-		return
-	end
-	local caption = self._caption
-	local d = self._config.TextDefaults
-
-	if textCfg.StartTime and textCfg.StartTime > 0 then
-		local elapsed = 0
-		while elapsed < textCfg.StartTime do
-			if token.cancelled then
-				return
-			end
-			elapsed += task.wait()
-		end
-	end
-	if token.cancelled then
-		return
-	end
-
-	local info = TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
-	if textCfg.Fade then
-		local strokeTarget = textCfg.StrokeTransparency or d.StrokeTransparency
-		local tw = TweenService:Create(caption, info, { TextTransparency = 0 })
-		local tw2 = TweenService:Create(self._captionStroke, info, { Transparency = strokeTarget })
-		self._janitor:Add(tw, "Cancel")
-		self._janitor:Add(tw2, "Cancel")
-		tw:Play()
-		tw2:Play()
-	end
-	if textCfg.Bounce then
-		local binfo = TweenInfo.new(0.35, Enum.EasingStyle.Back, Enum.EasingDirection.Out)
-		local tw = TweenService:Create(self._captionScale, binfo, { Scale = 1 })
-		self._janitor:Add(tw, "Cancel")
-		tw:Play()
-	end
-
-	if textCfg.Typewriter then
-		local total = utf8.len(caption.ContentText) or #caption.ContentText
-		local speed = textCfg.TypewriterSpeed or d.TypewriterSpeed
-		local shown = 0
-		while shown < total do
-			if token.cancelled then
-				return
-			end
-			shown += speed * task.wait()
-			caption.MaxVisibleGraphemes = math.floor(shown)
-		end
-		caption.MaxVisibleGraphemes = -1
-	end
 end
 
 return TransitionController

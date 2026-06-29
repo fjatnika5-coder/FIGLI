@@ -42,8 +42,24 @@ StarterPlayer/StarterPlayerScripts
     ├── AvatarClone             ModuleScript
     ├── CameraDirector          ModuleScript
     ├── TransitionController    ModuleScript
+    ├── TextController          ModuleScript
+    ├── ImageController         ModuleScript
     └── CutsceneRunner          ModuleScript
 ```
+
+## Gambar overlay (logo/sticker/dekorasi)
+
+- `Config.GlobalImages` = gambar di semua scene. `Scene.Images` = per scene.
+- Field: `Name`, `Image`, `Position`, `Size`, `Rotation`, `Transparency`, `ZIndex`,
+  `Animation` (`Fade`/`Pop`/`Float`/`Wiggle`/`Pulse`), `StartTime`, `EndTime` (per scene).
+- Asset kosong/placeholder di-skip tanpa warn. Gambar scene dibersihkan tiap ganti scene.
+
+## Avatar (fix)
+
+Clone **karakter LIVE** player yang injek pad (andal & persis), fallback ke
+HumanoidDescription. Ditempatkan di GirlPoint/BoyPoint pakai `CFrame` titik
+(footAlign: kaki nempel titik, hadap = arah Part). Titik boleh Part/Model/Attachment.
+Gagal clone → `warn` sekali, char asli tidak di-hide untuk role itu.
 
 `Modules` = anak dari `PhotoStoryClient`.
 

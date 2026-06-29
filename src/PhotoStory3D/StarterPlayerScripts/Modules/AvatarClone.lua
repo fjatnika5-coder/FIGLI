@@ -1,7 +1,8 @@
 --!nonstrict
--- AvatarClone: rig avatar lokal (client-only) dibangun dari userId player yang injek pad.
--- Diparent ke Workspace (tidak replikasi), ditaruh di titik scene, dianimasikan.
--- Maks 1 AnimationTrack hidup -> aman limit 64. Bersih total saat Destroy.
+-- AvatarClone: avatar untuk cutscene, OTOMATIS dari player yang injek pad.
+-- Strategi utama: clone karakter LIVE player (paling andal & persis).
+-- Fallback: bangun dari HumanoidDescription kalau character belum ada.
+-- Client-only (parent Workspace lokal). Maks 1 AnimationTrack hidup -> aman limit 64.
 
 local Players = game:GetService("Players")
 local Workspace = game:GetService("Workspace")
@@ -9,12 +10,21 @@ local Workspace = game:GetService("Workspace")
 local AvatarClone = {}
 AvatarClone.__index = AvatarClone
 
-local function sanitize(model)
+-- Buang yang berat/ganggu, sisakan visual + Motor6D + Humanoid + Animator + accessory.
+local function strip(model)
 	for _, d in ipairs(model:GetDescendants()) do
-		if d:IsA("LuaSourceContainer") or d:IsA("Tool") or d:IsA("BackpackItem") then
+		if d:IsA("LuaSourceContainer") -- Script/LocalScript/ModuleScript (mis. Animate, Health)
+			or d:IsA("Tool")
+			or d:IsA("BackpackItem")
+			or d:IsA("Sound")
+			or d:IsA("ParticleEmitter")
+			or d:IsA("Trail")
+			or d:IsA("Fire")
+			or d:IsA("Smoke")
+			or d:IsA("Beam")
+		then
 			d:Destroy()
 		elseif d:IsA("BasePart") then
-			-- Jangan anchor semua part: Motor6D harus bebas supaya animasi jalan.
 			d.Anchored = false
 			d.CanCollide = false
 			d.CanQuery = false
@@ -22,11 +32,26 @@ local function sanitize(model)
 			d.Massless = true
 		end
 	end
-	-- Anchor hanya root: rig diam di tempat, limb tetap dianimasikan motor.
 	local hrp = model:FindFirstChild("HumanoidRootPart")
 	if hrp then
-		hrp.Anchored = true
+		hrp.Anchored = true -- root diam, limb tetap dianimasikan Motor6D
 	end
+end
+
+local function prepHumanoid(model)
+	local humanoid = model:FindFirstChildOfClass("Humanoid")
+	if not humanoid then
+		return nil
+	end
+	humanoid.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.None
+	humanoid.EvaluateStateMachine = false
+	humanoid.RequiresNeck = false
+	local animator = humanoid:FindFirstChildOfClass("Animator")
+	if not animator then
+		animator = Instance.new("Animator")
+		animator.Parent = humanoid
+	end
+	return animator
 end
 
 function AvatarClone.new(userId, janitor)
@@ -39,42 +64,51 @@ function AvatarClone.new(userId, janitor)
 	return self
 end
 
--- Build async (yields). Panggil sebelum cutscene jalan.
 function AvatarClone:Build()
 	if self._ready then
 		return true
 	end
 
-	local okDesc, desc = pcall(function()
-		return Players:GetHumanoidDescriptionFromUserId(self._userId)
-	end)
-	if not okDesc or not desc then
-		return false
-	end
+	local model
 
-	local okModel, model = pcall(function()
-		return Players:CreateHumanoidModelFromDescription(desc, Enum.HumanoidRigType.R15)
-	end)
-	if not okModel or not model then
-		return false
-	end
-
-	sanitize(model)
-
-	local humanoid = model:FindFirstChildOfClass("Humanoid")
-	if humanoid then
-		humanoid.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.None
-		humanoid.EvaluateStateMachine = false
-		local animator = humanoid:FindFirstChildOfClass("Animator")
-		if not animator then
-			animator = Instance.new("Animator")
-			animator.Parent = humanoid
+	-- 1) Clone karakter live (andal & persis).
+	local player = Players:GetPlayerByUserId(self._userId)
+	local src = player and player.Character
+	if src and src.Parent and src:FindFirstChild("HumanoidRootPart") then
+		local prevArchivable = src.Archivable
+		src.Archivable = true
+		local ok, clone = pcall(function()
+			return src:Clone()
+		end)
+		src.Archivable = prevArchivable
+		if ok and clone then
+			model = clone
 		end
-		self._animator = animator
 	end
+
+	-- 2) Fallback: HumanoidDescription.
+	if not model then
+		local okDesc, desc = pcall(function()
+			return Players:GetHumanoidDescriptionFromUserId(self._userId)
+		end)
+		if okDesc and desc then
+			local okModel, built = pcall(function()
+				return Players:CreateHumanoidModelFromDescription(desc, Enum.HumanoidRigType.R15)
+			end)
+			if okModel and built then
+				model = built
+			end
+		end
+	end
+
+	if not model then
+		return false
+	end
+
+	strip(model)
+	self._animator = prepHumanoid(model)
 
 	model.Name = "PhotoStoryClone_" .. tostring(self._userId)
-	-- Sembunyikan dulu sampai diposisikan.
 	model.Parent = nil
 	self._model = model
 	self._janitor:Add(function()
@@ -84,14 +118,44 @@ function AvatarClone:Build()
 	return true
 end
 
-function AvatarClone:PlaceAt(cframe)
-	if not self._model then
-		return
+local function pointCFrame(point)
+	if not point then
+		return nil
 	end
-	self._model:PivotTo(cframe)
+	if point:IsA("BasePart") then
+		return point.CFrame
+	elseif point:IsA("Attachment") then
+		return point.WorldCFrame
+	elseif point:IsA("Model") then
+		return point:GetPivot()
+	end
+	return nil
+end
+
+-- Tempatkan di titik scene. footAlign = sejajarkan KAKI ke titik (default true).
+function AvatarClone:PlaceAt(point, footAlign)
+	if not self._model then
+		return false
+	end
+	local cf = pointCFrame(point)
+	if not cf then
+		return false
+	end
+
 	if self._model.Parent == nil then
 		self._model.Parent = Workspace
 	end
+
+	self._model:PivotTo(cf)
+
+	if footAlign ~= false then
+		-- Angkat supaya bagian bawah rig menyentuh Y titik (hindari nyungsep).
+		local bbCF, bbSize = self._model:GetBoundingBox()
+		local bottomY = bbCF.Position.Y - bbSize.Y * 0.5
+		local lift = cf.Position.Y - bottomY
+		self._model:PivotTo(CFrame.new(0, lift, 0) * self._model:GetPivot())
+	end
+	return true
 end
 
 function AvatarClone:PlayAnimation(animId)
@@ -114,6 +178,7 @@ function AvatarClone:PlayAnimation(animId)
 		return
 	end
 	track.Looped = true
+	track.Priority = Enum.AnimationPriority.Action
 	track:Play(0.2)
 	self._track = track
 	self._currentAnimId = animId
