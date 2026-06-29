@@ -51,73 +51,98 @@ local function ensurePadGui()
 	gui.Parent = playerGui
 	padGui = gui
 
-	-- Background pill
-	local bg = Instance.new("Frame")
-	bg.Name = "BG"
-	bg.AnchorPoint = Vector2.new(0.5, 0)
-	bg.Position = UDim2.fromScale(0.5, 0.06)
-	bg.Size = UDim2.fromScale(0.42, 0.068)
-	bg.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-	bg.BackgroundTransparency = 0.35
-	bg.BorderSizePixel = 0
-	bg.ZIndex = 10
-	bg.Parent = gui
+	-- ---- Waiting pill (atas tengah) ----
+	local pill = Instance.new("Frame")
+	pill.Name = "Pill"
+	pill.AnchorPoint = Vector2.new(0.5, 0)
+	pill.Position = UDim2.fromScale(0.5, 0.07)
+	pill.Size = UDim2.fromScale(0.34, 0.06)
+	pill.BackgroundColor3 = Color3.fromRGB(28, 24, 32)
+	pill.BackgroundTransparency = 1
+	pill.BorderSizePixel = 0
+	pill.ZIndex = 10
+	pill.Parent = gui
 
-	local corner = Instance.new("UICorner")
-	corner.CornerRadius = UDim.new(0.5, 0)
-	corner.Parent = bg
+	local pillGrad = Instance.new("UIGradient")
+	pillGrad.Color = ColorSequence.new(Color3.fromRGB(48, 36, 52), Color3.fromRGB(26, 22, 30))
+	pillGrad.Rotation = 90
+	pillGrad.Parent = pill
 
-	local stroke = Instance.new("UIStroke")
-	stroke.Thickness = 2
-	stroke.Color = Color3.fromRGB(255, 200, 230)
-	stroke.Transparency = 0.5
-	stroke.Parent = bg
+	local pc = Instance.new("UICorner")
+	pc.CornerRadius = UDim.new(0.5, 0)
+	pc.Parent = pill
 
-	-- Status label ("Waiting for partner...")
+	local ps = Instance.new("UIStroke")
+	ps.Thickness = 1.6
+	ps.Color = Color3.fromRGB(255, 200, 225)
+	ps.Transparency = 0.45
+	ps.Parent = pill
+
+	-- titik kecil indikator + label
+	local pad = Instance.new("UIPadding")
+	pad.PaddingLeft = UDim.new(0, 14)
+	pad.PaddingRight = UDim.new(0, 14)
+	pad.Parent = pill
+
 	local statusLbl = Instance.new("TextLabel")
 	statusLbl.Name = "StatusLabel"
 	statusLbl.BackgroundTransparency = 1
 	statusLbl.Size = UDim2.fromScale(1, 1)
-	statusLbl.Font = Enum.Font.GothamBold
+	statusLbl.Font = Enum.Font.GothamMedium
 	statusLbl.TextScaled = true
-	statusLbl.TextColor3 = Color3.fromRGB(255, 220, 240)
-	statusLbl.Text = "Waiting for partner..."
+	statusLbl.TextColor3 = Color3.fromRGB(255, 232, 244)
+	statusLbl.Text = "Waiting for partner"
 	statusLbl.ZIndex = 11
-	statusLbl.Visible = true
-	statusLbl.Parent = bg
+	statusLbl.Parent = pill
 
 	local sc = Instance.new("UITextSizeConstraint")
-	sc.MaxTextSize = 22
+	sc.MaxTextSize = 18
 	sc.MinTextSize = 8
 	sc.Parent = statusLbl
 
-	-- Big countdown number (hidden by default)
+	-- ---- Countdown ring (tengah layar) ----
+	local ring = Instance.new("Frame")
+	ring.Name = "Ring"
+	ring.AnchorPoint = Vector2.new(0.5, 0.5)
+	ring.Position = UDim2.fromScale(0.5, 0.42)
+	ring.Size = UDim2.fromScale(0.16, 0.16)
+	ring.SizeConstraint = Enum.SizeConstraint.RelativeYY
+	ring.BackgroundColor3 = Color3.fromRGB(26, 22, 30)
+	ring.BackgroundTransparency = 0.2
+	ring.BorderSizePixel = 0
+	ring.Visible = false
+	ring.ZIndex = 12
+	ring.Parent = gui
+
+	local rc = Instance.new("UICorner")
+	rc.CornerRadius = UDim.new(0.5, 0)
+	rc.Parent = ring
+
+	local rs = Instance.new("UIStroke")
+	rs.Thickness = 3
+	rs.Color = Color3.fromRGB(255, 190, 220)
+	rs.Transparency = 0.1
+	rs.Parent = ring
+
 	local countLbl = Instance.new("TextLabel")
 	countLbl.Name = "CountLabel"
 	countLbl.AnchorPoint = Vector2.new(0.5, 0.5)
 	countLbl.Position = UDim2.fromScale(0.5, 0.5)
-	countLbl.Size = UDim2.fromScale(1, 1)
+	countLbl.Size = UDim2.fromScale(0.9, 0.9)
 	countLbl.BackgroundTransparency = 1
-	countLbl.Font = Enum.Font.GothamBold
+	countLbl.Font = Enum.Font.FredokaOne
 	countLbl.TextScaled = true
 	countLbl.TextColor3 = Color3.fromRGB(255, 255, 255)
-	countLbl.TextTransparency = 1
-	countLbl.ZIndex = 12
-	countLbl.Visible = false
-	countLbl.Parent = bg
+	countLbl.Text = "5"
+	countLbl.ZIndex = 13
+	countLbl.Parent = ring
 
-	local sc2 = Instance.new("UITextSizeConstraint")
-	sc2.MaxTextSize = 36
-	sc2.MinTextSize = 10
-	sc2.Parent = countLbl
-
-	-- UIScale for pop animation on countdown
 	local uiScale = Instance.new("UIScale")
 	uiScale.Scale = 1
-	uiScale.Parent = countLbl
+	uiScale.Parent = ring
 
-	bg.BackgroundTransparency = 1
-	local fadeIn = TweenService:Create(bg, TweenInfo.new(0.3, Enum.EasingStyle.Quad), { BackgroundTransparency = 0.35 })
+	-- fade in pill
+	local fadeIn = TweenService:Create(pill, TweenInfo.new(0.3, Enum.EasingStyle.Quad), { BackgroundTransparency = 0.15 })
 	fadeIn:Play()
 
 	return gui
@@ -125,40 +150,37 @@ end
 
 local function showWaiting()
 	local gui = ensurePadGui()
-	local bg = gui:FindFirstChild("BG")
-	if not bg then return end
-	local statusLbl = bg:FindFirstChild("StatusLabel")
-	local countLbl  = bg:FindFirstChild("CountLabel")
-	if statusLbl then
-		statusLbl.Text = "Waiting for partner..."
-		statusLbl.Visible = true
+	local pill = gui:FindFirstChild("Pill")
+	local ring = gui:FindFirstChild("Ring")
+	if pill then
+		pill.Visible = true
+		local lbl = pill:FindFirstChild("StatusLabel")
+		if lbl then lbl.Text = "Waiting for partner" end
 	end
-	if countLbl then
-		countLbl.Visible = false
-		countLbl.TextTransparency = 1
-	end
+	if ring then ring.Visible = false end
 end
 
 local function showCountdown(count)
 	local gui = ensurePadGui()
-	local bg = gui:FindFirstChild("BG")
-	if not bg then return end
-	local statusLbl = bg:FindFirstChild("StatusLabel")
-	local countLbl  = bg:FindFirstChild("CountLabel")
+	local pill = gui:FindFirstChild("Pill")
+	local ring = gui:FindFirstChild("Ring")
+	if pill then
+		pill.Visible = true
+		local lbl = pill:FindFirstChild("StatusLabel")
+		if lbl then lbl.Text = "Get ready" end
+	end
+	if not ring then return end
 
-	if statusLbl then statusLbl.Visible = false end
-	if not countLbl then return end
+	ring.Visible = true
+	local countLbl = ring:FindFirstChild("CountLabel")
+	if countLbl then countLbl.Text = tostring(count) end
 
-	countLbl.Visible = true
-	countLbl.Text = tostring(count)
-	countLbl.TextTransparency = 0
-
-	-- Pop animation per angka
-	local sc = countLbl:FindFirstChildOfClass("UIScale")
-	if sc then
-		sc.Scale = 1.4
+	-- pop per angka
+	local s = ring:FindFirstChildOfClass("UIScale")
+	if s then
+		s.Scale = 1.35
 		if countdownTween then countdownTween:Cancel() end
-		countdownTween = TweenService:Create(sc, TweenInfo.new(0.35, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { Scale = 1 })
+		countdownTween = TweenService:Create(s, TweenInfo.new(0.4, Enum.EasingStyle.Back, Enum.EasingDirection.Out), { Scale = 1 })
 		countdownTween:Play()
 	end
 end
@@ -201,33 +223,27 @@ PadStatus.OnClientEvent:Connect(function(statusType, data)
 	elseif statusType == "Countdown" then
 		showCountdown(data)
 	elseif statusType == "Cancel" then
-		-- Show "Partner not found" briefly then hide
+		-- "Partner not found" sebentar lalu balik waiting
 		local gui = ensurePadGui()
-		local bg = gui and gui:FindFirstChild("BG")
-		if bg then
-			local statusLbl = bg:FindFirstChild("StatusLabel")
-			local countLbl  = bg:FindFirstChild("CountLabel")
-			if countLbl then countLbl.Visible = false end
-			if statusLbl then
-				statusLbl.Text = "Partner not found"
-				statusLbl.Visible = true
-			end
+		local pill = gui and gui:FindFirstChild("Pill")
+		local ring = gui and gui:FindFirstChild("Ring")
+		if ring then ring.Visible = false end
+		if pill then
+			pill.Visible = true
+			local lbl = pill:FindFirstChild("StatusLabel")
+			if lbl then lbl.Text = "Partner not found" end
 			task.delay(2, function()
-				if padGui and padGui.Parent then
-					showWaiting()
-				end
+				if padGui and padGui.Parent then showWaiting() end
 			end)
 		end
 	elseif statusType == "Hide" then
-		-- Player stepped off pad
+		-- Player keluar pad
 		if padGui then
-			local bg = padGui:FindFirstChild("BG")
-			if bg then
-				local tw = TweenService:Create(bg, TweenInfo.new(0.25, Enum.EasingStyle.Quad), { BackgroundTransparency = 1 })
+			local pill = padGui:FindFirstChild("Pill")
+			if pill then
+				local tw = TweenService:Create(pill, TweenInfo.new(0.25, Enum.EasingStyle.Quad), { BackgroundTransparency = 1 })
 				tw:Play()
-				tw.Completed:Connect(function()
-					destroyPadGui()
-				end)
+				tw.Completed:Connect(function() destroyPadGui() end)
 			else
 				destroyPadGui()
 			end

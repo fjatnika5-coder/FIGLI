@@ -1,18 +1,16 @@
 --!nonstrict
--- TextController: per-kata dekat karakter (WorldToViewportPoint dari Head/HRP).
--- Tiap kata = TextLabel sendiri, pop/float/wiggle, warna bergantian.
--- Backward compatible: config lama {Text,StartTime,Typewriter,Fade,Bounce} tetap jalan
--- (mode default = PerWordNearCharacter dengan target Alternate).
--- Cleanup: semua label per-scene dihancurkan di ClearWords().
+-- TextController: kata per-kata dekat karakter (WorldToViewportPoint dari Head/HRP).
+-- ANTI-NUMPUK: tiap zona (Girl/Boy/Center) punya slot stack vertikal -> kata tidak tumpuk.
+-- Cute style: font bulat, gradient halus, shadow + stroke, pop + float + wiggle.
+-- Backward compatible: config lama {Typewriter/Fade/Bounce} jalan via _playLegacy.
+-- Cleanup: semua label per scene dihancurkan di ClearWords(); slot di-reset.
 
-local RunService    = game:GetService("RunService")
-local TweenService  = game:GetService("TweenService")
-local Workspace     = game:GetService("Workspace")
+local TweenService = game:GetService("TweenService")
+local Workspace    = game:GetService("Workspace")
 
 local TextController = {}
 TextController.__index = TextController
 
--- Default warna per kata (cycled)
 local DEFAULT_COLORS = {
 	Color3.fromRGB(255, 190, 220),
 	Color3.fromRGB(255, 255, 255),
@@ -20,54 +18,53 @@ local DEFAULT_COLORS = {
 	Color3.fromRGB(255, 230, 160),
 }
 
-local DEFAULT_FONT        = Enum.Font.GothamBold
-local DEFAULT_WORD_DELAY  = 0.22
-local DEFAULT_LIFETIME    = 1.15
-local DEFAULT_MODE        = "PerWordNearCharacter"
-local DEFAULT_TARGET      = "Alternate"
-
--- Offset Y kamera (pixel) dekat kepala karakter
-local HEAD_Y_OFFSET = -90
+local CUTE_FONT       = Enum.Font.FredokaOne
+local DEFAULT_DELAY   = 0.22
+local DEFAULT_LIFE    = 1.15
+local DEFAULT_MODE    = "PerWordNearCharacter"
+local DEFAULT_TARGET  = "Alternate"
+local DEFAULT_OFFSET  = Vector2.new(0, -82)   -- pixel dari kepala
+local DEFAULT_WSIZE   = UDim2.fromScale(0.105, 0.05)
+local SLOT_STEP       = 0.052                  -- jarak antar kata dalam stack (scale Y)
+local FALLBACK_POS    = UDim2.fromScale(0.5, 0.78)
 
 local function splitWords(text)
 	local t = {}
-	for w in string.gmatch(text, "%S+") do t[#t+1] = w end
+	for w in string.gmatch(text, "%S+") do t[#t + 1] = w end
 	return t
 end
 
--- Ambil posisi 3D kepala/HRP dari clone model
 local function getHeadWorld(cloneObj)
 	if not cloneObj or not cloneObj._model then return nil end
-	local m = cloneObj._model
+	local m    = cloneObj._model
 	local head = m:FindFirstChild("Head") or m:FindFirstChild("HumanoidRootPart")
 	if head and head:IsA("BasePart") then
-		return head.Position + Vector3.new(0, 0.5, 0)
+		return head.Position + Vector3.new(0, 0.4, 0)
 	end
 	return nil
 end
 
--- Convert world pos -> screen UDim2 (scale). Mengembalikan pos, isOnScreen.
+-- world -> screen scale; (nil,false) kalau di belakang kamera / mepet pinggir
 local function worldToScreen(worldPos)
 	if not worldPos then return nil, false end
 	local cam = Workspace.CurrentCamera
 	local vp  = cam.ViewportSize
-	local screenVec, _, onScreen = cam:WorldToViewportPoint(worldPos)
-	if not onScreen or screenVec.Z < 0 then return nil, false end
-	local sx = screenVec.X / vp.X
-	local sy = screenVec.Y / vp.Y
-	if sx < 0.03 or sx > 0.97 or sy < 0.03 or sy > 0.97 then return nil, false end
-	return UDim2.fromScale(sx, sy), true
+	local sv, _, onScreen = cam:WorldToViewportPoint(worldPos)
+	if not onScreen or sv.Z < 0 then return nil, false end
+	local sx, sy = sv.X / vp.X, sv.Y / vp.Y
+	if sx < 0.04 or sx > 0.96 or sy < 0.04 or sy > 0.94 then return nil, false end
+	return sx, sy, true
 end
 
 function TextController.new(screen, config, lowEnd, janitor)
-	local self    = setmetatable({}, TextController)
-	self._screen  = screen
-	self._config  = config
-	self._lowEnd  = lowEnd == true
-	self._janitor = janitor
-	self._clones  = {}       -- {Girl=AvatarClone, Boy=AvatarClone}
-	self._words   = {}       -- semua TextLabel aktif scene ini
-	self._playThreads = {}   -- task threads (untuk cancel)
+	local self      = setmetatable({}, TextController)
+	self._screen    = screen
+	self._config    = config
+	self._lowEnd    = lowEnd == true
+	self._janitor   = janitor
+	self._clones    = {}
+	self._words     = {}
+	self._slots     = { Girl = 0, Boy = 0, Center = 0 }
 	return self
 end
 
@@ -75,139 +72,175 @@ function TextController:SetClones(clones)
 	self._clones = clones or {}
 end
 
--- Tidak perlu RenderStepped persistent; cleanup dipanggil via janitor.
 function TextController:Begin()
-	self._janitor:Add(function()
-		self:ClearWords()
-	end)
+	self._janitor:Add(function() self:ClearWords() end)
 end
 
-function TextController:SetScene(textCfg)
+function TextController:SetScene(_textCfg)
 	self:ClearWords()
-	-- tidak perlu setup awal (label dibuat saat Play)
 end
 
--- Hancurkan semua label kata yang aktif
 function TextController:ClearWords()
-	for _, th in ipairs(self._playThreads) do
-		pcall(task.cancel, th)
-	end
-	self._playThreads = {}
 	for _, lbl in ipairs(self._words) do
 		if typeof(lbl) == "Instance" and lbl.Parent then
 			pcall(function() lbl:Destroy() end)
 		end
 	end
 	self._words = {}
+	self._slots = { Girl = 0, Boy = 0, Center = 0 }
 end
 
--- Buat 1 TextLabel kata di posisi screen
-local function makeWordLabel(screen, word, pos, color, wordIdx, lowEnd)
-	local lbl = Instance.new("TextLabel")
-	lbl.Name            = "W_" .. word
-	lbl.BackgroundTransparency = 1
-	lbl.AnchorPoint     = Vector2.new(0.5, 0.5)
-	lbl.Size            = UDim2.fromScale(0.13, 0.048)
-	lbl.Position        = pos
-	lbl.TextScaled      = true
-	lbl.Font            = DEFAULT_FONT
-	lbl.Text            = word
-	lbl.TextColor3      = color
-	lbl.TextTransparency = 1
-	lbl.ZIndex          = 35
-	lbl.Parent          = screen
-
-	local stroke = Instance.new("UIStroke")
-	stroke.Thickness    = 2.5
-	stroke.Color        = Color3.fromRGB(0, 0, 0)
-	stroke.Transparency = 0.25
-	stroke.Parent       = lbl
-
-	local sc = Instance.new("UITextSizeConstraint")
-	sc.MaxTextSize = 32
-	sc.MinTextSize = 8
-	sc.Parent = lbl
-
-	local uiScale = Instance.new("UIScale")
-	uiScale.Scale = 0.4
-	uiScale.Parent = lbl
-
-	return lbl, uiScale
-end
-
--- Animasi masuk + float + wiggle untuk 1 kata, lalu fade keluar setelah lifetime
-local function animateWord(lbl, uiScale, wordIdx, lifetime, lowEnd, wordItems)
-	-- Pop in
-	TweenService:Create(uiScale, TweenInfo.new(0.28, Enum.EasingStyle.Back, Enum.EasingDirection.Out), { Scale = 1 }):Play()
-	TweenService:Create(lbl, TweenInfo.new(0.18, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { TextTransparency = 0 }):Play()
-
-	-- Float naik pelan
-	local startPos = lbl.Position
-	local floatPos = UDim2.new(startPos.X.Scale, startPos.X.Offset, startPos.Y.Scale - 0.05, startPos.Y.Offset)
-	TweenService:Create(lbl, TweenInfo.new(lifetime + 0.3, Enum.EasingStyle.Sine, Enum.EasingDirection.Out), { Position = floatPos }):Play()
-
-	-- Sway halus (hanya non-lowend)
-	if not lowEnd then
-		local targetRot = (wordIdx % 2 == 0) and 4 or -4
-		TweenService:Create(lbl, TweenInfo.new(0.6, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true), { Rotation = targetRot }):Play()
+-- zona + base screen pos untuk target
+function TextController:_zoneBase(target, wordIdx)
+	local zone, cloneObj
+	if target == "Center" then
+		zone = "Center"
+	elseif target == "Girl" then
+		zone, cloneObj = "Girl", self._clones.Girl
+	elseif target == "Boy" then
+		zone, cloneObj = "Boy", self._clones.Boy
+	else -- Alternate
+		if wordIdx % 2 == 1 then zone, cloneObj = "Girl", self._clones.Girl
+		else zone, cloneObj = "Boy", self._clones.Boy end
 	end
 
-	-- Fade out setelah lifetime
-	task.delay(lifetime, function()
-		if not lbl.Parent then return end
-		TweenService:Create(lbl, TweenInfo.new(0.28, Enum.EasingStyle.Quad, Enum.EasingDirection.In), { TextTransparency = 1 }):Play()
+	if zone == "Center" then
+		return zone, FALLBACK_POS.X.Scale, FALLBACK_POS.Y.Scale, true
+	end
+
+	local sx, sy, on = worldToScreen(getHeadWorld(cloneObj))
+	if on then
+		return zone, sx, sy, true
+	end
+	-- fallback kiri (Girl) / kanan (Boy)
+	local x = (zone == "Girl") and 0.27 or 0.73
+	return zone, x, 0.62, false
+end
+
+local function makeWord(screen, word, color, wsize)
+	-- holder buat sway+scale tanpa ganggu posisi
+	local holder = Instance.new("Frame")
+	holder.BackgroundTransparency = 1
+	holder.AnchorPoint = Vector2.new(0.5, 0.5)
+	holder.Size = wsize
+	holder.ZIndex = 35
+	holder.Parent = screen
+
+	local scale = Instance.new("UIScale")
+	scale.Scale = 0.35
+	scale.Parent = holder
+
+	-- shadow
+	local shadow = Instance.new("TextLabel")
+	shadow.BackgroundTransparency = 1
+	shadow.Size = UDim2.fromScale(1, 1)
+	shadow.Position = UDim2.fromOffset(2, 3)
+	shadow.TextScaled = true
+	shadow.Font = CUTE_FONT
+	shadow.Text = word
+	shadow.TextColor3 = Color3.fromRGB(0, 0, 0)
+	shadow.TextTransparency = 1
+	shadow.ZIndex = 35
+	shadow.Parent = holder
+
+	-- main
+	local main = Instance.new("TextLabel")
+	main.BackgroundTransparency = 1
+	main.Size = UDim2.fromScale(1, 1)
+	main.TextScaled = true
+	main.Font = CUTE_FONT
+	main.Text = word
+	main.TextColor3 = color
+	main.TextTransparency = 1
+	main.ZIndex = 36
+	main.Parent = holder
+
+	-- gradient halus (atas terang -> bawah warna)
+	local grad = Instance.new("UIGradient")
+	grad.Color = ColorSequence.new({
+		ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 255, 255)),
+		ColorSequenceKeypoint.new(1, color),
+	})
+	grad.Rotation = 90
+	grad.Parent = main
+
+	local stroke = Instance.new("UIStroke")
+	stroke.Thickness = 2.5
+	stroke.Color = Color3.fromRGB(40, 25, 35)
+	stroke.Transparency = 0.15
+	stroke.Parent = main
+
+	local sc = Instance.new("UITextSizeConstraint")
+	sc.MaxTextSize = 30
+	sc.MinTextSize = 8
+	sc.Parent = main
+	local sc2 = sc:Clone()
+	sc2.Parent = shadow
+
+	return holder, scale, main, shadow, stroke
+end
+
+-- spawn 1 kata; freeSlot dipanggil saat kata mati untuk lepas slot
+function TextController:_spawnWord(word, target, wordIdx, color, life, wsize, offset)
+	local zone, bx, by = self:_zoneBase(target, wordIdx)
+
+	-- slot stack: kata baru di bawah, naik pelan -> tidak numpuk
+	local slot = self._slots[zone] or 0
+	self._slots[zone] = slot + 1
+	local vp = Workspace.CurrentCamera.ViewportSize
+	local jitterX = (math.random() - 0.5) * 0.018
+	local startY  = math.clamp(by + (offset.Y / vp.Y) - slot * SLOT_STEP, 0.05, 0.9)
+	local posX    = math.clamp(bx + (offset.X / vp.X) + jitterX, 0.06, 0.94)
+	local startPos = UDim2.fromScale(posX, startY)
+
+	local holder, scale, main, shadow, stroke = makeWord(self._screen, word, color, wsize)
+	holder.Position = startPos
+	holder.Rotation = (math.random() - 0.5) * 6
+	self._words[#self._words + 1] = holder
+
+	-- pop in
+	TweenService:Create(scale, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.Out), { Scale = 1 }):Play()
+	TweenService:Create(main,   TweenInfo.new(0.16), { TextTransparency = 0 }):Play()
+	TweenService:Create(shadow, TweenInfo.new(0.16), { TextTransparency = 0.4 }):Play()
+	TweenService:Create(stroke, TweenInfo.new(0.16), { Transparency = 0.15 }):Play()
+
+	-- float naik pelan
+	local upPos = UDim2.new(startPos.X.Scale, 0, startPos.Y.Scale - 0.045, 0)
+	TweenService:Create(holder, TweenInfo.new(life + 0.3, Enum.EasingStyle.Sine, Enum.EasingDirection.Out), { Position = upPos }):Play()
+
+	-- wiggle halus
+	if not self._lowEnd then
+		local r = (wordIdx % 2 == 0) and 4 or -4
+		TweenService:Create(holder, TweenInfo.new(0.55, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true), { Rotation = r }):Play()
+	end
+
+	-- fade out + free slot
+	task.delay(life, function()
+		if not holder.Parent then return end
+		TweenService:Create(main,   TweenInfo.new(0.26), { TextTransparency = 1 }):Play()
+		TweenService:Create(shadow, TweenInfo.new(0.26), { TextTransparency = 1 }):Play()
+		TweenService:Create(stroke, TweenInfo.new(0.26), { Transparency = 1 }):Play()
 		task.delay(0.3, function()
-			pcall(function() lbl:Destroy() end)
+			if self._slots[zone] and self._slots[zone] > 0 then
+				self._slots[zone] = self._slots[zone] - 1
+			end
+			pcall(function() holder:Destroy() end)
 		end)
 	end)
 end
 
--- Tentukan posisi screen untuk target role
-function TextController:_posForTarget(role, wordIdx)
-	local cloneObj = nil
-	if role == "Girl" then
-		cloneObj = self._clones.Girl
-	elseif role == "Boy" then
-		cloneObj = self._clones.Boy
-	else -- Alternate
-		cloneObj = (wordIdx % 2 == 1) and self._clones.Girl or self._clones.Boy
-	end
-
-	local worldPos = getHeadWorld(cloneObj)
-	local screenPos, onScreen = worldToScreen(worldPos)
-
-	if onScreen then
-		-- Offset ke atas dari posisi kepala + random kecil
-		local cam = Workspace.CurrentCamera
-		local vpH = cam.ViewportSize.Y
-		local offsetY = HEAD_Y_OFFSET / vpH
-		local rx = (math.random() - 0.5) * 0.07
-		local ry = (math.random() - 0.5) * 0.035
-		return UDim2.fromScale(
-			math.clamp(screenPos.X.Scale + rx, 0.07, 0.90),
-			math.clamp(screenPos.Y.Scale + offsetY + ry, 0.05, 0.88)
-		)
-	else
-		-- Fallback: kiri untuk Girl, kanan untuk Boy
-		local isGirl = (role == "Girl") or (role == "Alternate" and wordIdx % 2 == 1)
-		local baseX  = isGirl and 0.28 or 0.70
-		return UDim2.fromScale(baseX + (math.random() - 0.5) * 0.06, 0.60 + (math.random() - 0.5) * 0.05)
-	end
-end
-
--- Play: spawn kata satu per satu dekat karakter. Cancellable via token.
 function TextController:Play(textCfg, token)
 	if not textCfg or not textCfg.Text or textCfg.Text == "" then return end
-	local d = self._config.TextDefaults
 
-	local startTime  = textCfg.StartTime or 0
-	local mode       = textCfg.Mode      or DEFAULT_MODE
-	local target     = textCfg.Target    or DEFAULT_TARGET
-	local wordDelay  = textCfg.WordDelay or DEFAULT_WORD_DELAY
-	local lifetime   = textCfg.WordLifetime or DEFAULT_LIFETIME
-	local colors     = textCfg.Colors    or DEFAULT_COLORS
+	local startTime = textCfg.StartTime    or 0
+	local mode      = textCfg.Mode         or DEFAULT_MODE
+	local target    = textCfg.Target       or DEFAULT_TARGET
+	local delay     = textCfg.WordDelay    or DEFAULT_DELAY
+	local life      = textCfg.WordLifetime or DEFAULT_LIFE
+	local colors    = textCfg.Colors       or self._config.DefaultWordColors or DEFAULT_COLORS
+	local wsize     = textCfg.WordSize     or DEFAULT_WSIZE
+	local offset    = textCfg.Offset       or DEFAULT_OFFSET
 
-	-- Tunggu StartTime
 	if startTime > 0 then
 		local el = 0
 		while el < startTime do
@@ -217,40 +250,24 @@ function TextController:Play(textCfg, token)
 	end
 	if token.cancelled then return end
 
-	-- Kalau bukan mode per-kata, fallback ke mode lama (satu label di bawah)
 	if mode ~= "PerWordNearCharacter" then
 		self:_playLegacy(textCfg, token)
 		return
 	end
 
 	local words = splitWords(textCfg.Text)
-	if #words == 0 then return end
-
-	local wordItems = self._words
-
 	for i, word in ipairs(words) do
 		if token.cancelled then return end
-
-		local pos   = self:_posForTarget(target, i)
 		local color = colors[((i - 1) % #colors) + 1] or Color3.new(1, 1, 1)
-
-		local lbl, uiScale = makeWordLabel(self._screen, word, pos, color, i, self._lowEnd)
-		wordItems[#wordItems + 1] = lbl
-
-		animateWord(lbl, uiScale, i, lifetime, self._lowEnd, wordItems)
-
-		if i < #words then
-			task.wait(wordDelay)
-		end
+		self:_spawnWord(word, target, i, color, life, wsize, offset)
+		if i < #words then task.wait(delay) end
 	end
 end
 
--- Mode lama: satu caption di bawah layar (Typewriter/Fade/Bounce)
+-- mode lama: caption bawah layar
 function TextController:_playLegacy(textCfg, token)
 	local d = self._config.TextDefaults
-
 	local holder = Instance.new("Frame")
-	holder.Name = "CaptionLegacy"
 	holder.AnchorPoint = Vector2.new(0.5, 0.5)
 	holder.BackgroundTransparency = 1
 	holder.Size     = textCfg.Size     or d.Size
@@ -279,17 +296,12 @@ function TextController:_playLegacy(textCfg, token)
 	stroke.Transparency = 1
 	stroke.Parent = lbl
 
-	local sc = Instance.new("UITextSizeConstraint")
-	sc.MaxTextSize = 52; sc.MinTextSize = 10
-	sc.Parent = lbl
-
 	self._words[#self._words + 1] = holder
 
-	-- Pop + fade in
 	local popStyle = (textCfg.Bounce ~= false) and Enum.EasingStyle.Back or Enum.EasingStyle.Quart
 	TweenService:Create(scale, TweenInfo.new(0.32, popStyle, Enum.EasingDirection.Out), { Scale = 1 }):Play()
-	TweenService:Create(lbl, TweenInfo.new(0.25, Enum.EasingStyle.Quad), { TextTransparency = 0 }):Play()
-	TweenService:Create(stroke, TweenInfo.new(0.25, Enum.EasingStyle.Quad), { Transparency = textCfg.StrokeTransparency or d.StrokeTransparency }):Play()
+	TweenService:Create(lbl, TweenInfo.new(0.25), { TextTransparency = 0 }):Play()
+	TweenService:Create(stroke, TweenInfo.new(0.25), { Transparency = textCfg.StrokeTransparency or d.StrokeTransparency }):Play()
 
 	if textCfg.Typewriter then
 		local total = utf8.len(lbl.ContentText) or #lbl.ContentText
@@ -306,18 +318,7 @@ function TextController:_playLegacy(textCfg, token)
 end
 
 function TextController:FadeOut(duration)
-	-- Kata per-kata sudah punya lifetime sendiri; legacy holder di-fade out
-	for _, item in ipairs(self._words) do
-		if typeof(item) == "Instance" and item.Parent then
-			if item:IsA("Frame") then
-				-- Legacy holder
-				TweenService:Create(item, TweenInfo.new(duration or 0.25, Enum.EasingStyle.Quad), {}):Play()
-				task.delay((duration or 0.25) + 0.05, function()
-					pcall(function() item:Destroy() end)
-				end)
-			end
-		end
-	end
+	-- per-kata fade sendiri; legacy holder dibersihkan di ClearWords scene berikut
 end
 
 return TextController

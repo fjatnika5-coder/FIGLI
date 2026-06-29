@@ -184,8 +184,25 @@ function CutsceneRunner:_runScenes(scenesFolder)
 			self._clones.Boy:PlayAnimation(scene.Animations and scene.Animations.Boy)
 		end
 
-		-- 3. Tunggu animasi settle (pose sudah masuk sebelum kamera tampil)
-		if not self:_wait(0.15) then break end
+		-- 3. Tunggu sampai animasi BENAR2 jalan (pose masuk) sebelum kamera reveal.
+		--    Poll IsPosed() maks ~0.35s. Kalau anim gagal load, lanjut (avatar idle, tidak stuck).
+		do
+			local deadline = os.clock() + 0.35
+			local function bothReady()
+				local g = self._clones.Girl
+				local b = self._clones.Boy
+				local gOk = (not g) or (not g:HasAnim()) or g:IsPosed()
+				local bOk = (not b) or (not b:HasAnim()) or b:IsPosed()
+				return gOk and bOk
+			end
+			-- minimal settle supaya pose terlihat, lalu tunggu pose
+			if not self:_wait(0.12) then break end
+			while not bothReady() and os.clock() < deadline do
+				if self._token.cancelled then break end
+				task.wait()
+			end
+			if self._token.cancelled then break end
+		end
 
 		-- 4. Set kamera ke CameraPart scene ini
 		local camCfg = scene.Camera or {}
@@ -225,11 +242,42 @@ function CutsceneRunner:_runScenes(scenesFolder)
 	end
 end
 
+function CutsceneRunner:_preload()
+	local ContentProvider = game:GetService("ContentProvider")
+	local assets = {}
+	-- model clone
+	for _, c in pairs(self._clones) do
+		local m = c.GetModel and c:GetModel()
+		if m then assets[#assets + 1] = m end
+	end
+	-- animasi tiap scene
+	for _, scene in ipairs(Config.Scenes or {}) do
+		local a = scene.Animations or {}
+		for _, id in pairs({ a.Girl, a.Boy }) do
+			if typeof(id) == "string" and string.match(id, "^rbxassetid://%d+$") then
+				local anim = Instance.new("Animation")
+				anim.AnimationId = id
+				assets[#assets + 1] = anim
+			end
+		end
+	end
+	if #assets > 0 then
+		pcall(function() ContentProvider:PreloadAsync(assets) end)
+	end
+	-- buang Animation sementara
+	for _, a in ipairs(assets) do
+		if typeof(a) == "Instance" and a:IsA("Animation") then a:Destroy() end
+	end
+end
+
 function CutsceneRunner:Run(payload, onFinish)
 	self._onFinish = onFinish
 
 	self:_buildUI()
 	self:_disableControls()
+
+	-- Tutup layar SEBELUM ambil alih kamera + preload (sembunyikan snap/loading).
+	self._transition:CoverInstant((Config.Scenes and Config.Scenes[1] and Config.Scenes[1].TransitionIn) or "FadeBlack")
 
 	self._camera = CameraDirector.new(self._janitor, self._lowEnd)
 	self._camera:Begin()
@@ -243,6 +291,9 @@ function CutsceneRunner:Run(payload, onFinish)
 	-- Setelah build, berikan clone refs ke controllers
 	self._text:SetClones(self._clones)
 	self._images:SetClones(self._clones)
+
+	-- Preload model clone + semua animasi scene supaya tidak nge-lag/late saat shoot.
+	self:_preload()
 
 	self._images:BeginGlobals()
 
