@@ -1,11 +1,11 @@
 --!nonstrict
--- PhotoStoryClient: dengar StartStory/EndStory/PadStatus.
--- PadStatus: tampil UI "Waiting for partner..." / countdown 5-4-3-2-1.
--- StartStory: jalankan CutsceneRunner. EndStory: hentikan runner.
+-- PhotoStoryClient: dengar StartStory / EndStory / PadStatus.
+-- PadStatus -> TOAST kecil (notif), bukan background besar. Responsive (scale + AutomaticSize).
+-- StartStory -> jalankan CutsceneRunner. EndStory -> stop runner.
 
-local Players            = game:GetService("Players")
-local ReplicatedStorage  = game:GetService("ReplicatedStorage")
-local TweenService       = game:GetService("TweenService")
+local Players           = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local TweenService      = game:GetService("TweenService")
 
 local Modules        = script:WaitForChild("Modules")
 local CutsceneRunner = require(Modules:WaitForChild("CutsceneRunner"))
@@ -15,180 +15,126 @@ local StartStory = Remotes:WaitForChild("StartStory")
 local EndStory   = Remotes:WaitForChild("EndStory")
 local PadStatus  = Remotes:WaitForChild("PadStatus")
 
-local LocalPlayer = Players.LocalPlayer
+local LocalPlayer  = Players.LocalPlayer
 local activeRunner = nil
 
 -- =====================================================================
--- Pad Status UI (Waiting / Countdown)
+-- Toast UI (notif kecil)
 -- =====================================================================
+local toastGui   = nil
+local toastFrame = nil
+local toastLabel = nil
+local toastScale = nil
+local popTween   = nil
+local hideThread = nil
 
-local padGui = nil        -- ScreenGui yang berisi UI status pad
-local countdownTween = nil
-
-local function destroyPadGui()
-	if countdownTween then
-		countdownTween:Cancel()
-		countdownTween = nil
-	end
-	if padGui then
-		padGui:Destroy()
-		padGui = nil
-	end
+local function destroyToast()
+	if popTween then popTween:Cancel(); popTween = nil end
+	if hideThread then pcall(task.cancel, hideThread); hideThread = nil end
+	if toastGui then toastGui:Destroy(); toastGui = nil end
+	toastFrame, toastLabel, toastScale = nil, nil, nil
 end
 
-local function ensurePadGui()
-	if padGui and padGui.Parent then return padGui end
-	destroyPadGui()
+local function ensureToast()
+	if toastGui and toastGui.Parent then return end
+	destroyToast()
 
 	local playerGui = LocalPlayer:WaitForChild("PlayerGui")
-
 	local gui = Instance.new("ScreenGui")
-	gui.Name = "PhotoStoryPadStatus"
+	gui.Name = "PhotoStoryToast"
 	gui.ResetOnSpawn = false
-	gui.IgnoreGuiInset = true
+	gui.IgnoreGuiInset = false
 	gui.DisplayOrder = 4999
 	gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 	gui.Parent = playerGui
-	padGui = gui
+	toastGui = gui
 
-	-- ---- Waiting pill (atas tengah) ----
-	local pill = Instance.new("Frame")
-	pill.Name = "Pill"
-	pill.AnchorPoint = Vector2.new(0.5, 0)
-	pill.Position = UDim2.fromScale(0.5, 0.07)
-	pill.Size = UDim2.fromScale(0.34, 0.06)
-	pill.BackgroundColor3 = Color3.fromRGB(28, 24, 32)
-	pill.BackgroundTransparency = 1
-	pill.BorderSizePixel = 0
-	pill.ZIndex = 10
-	pill.Parent = gui
+	-- Frame kecil di atas-tengah, auto lebar mengikuti teks (responsive).
+	local frame = Instance.new("Frame")
+	frame.Name = "Toast"
+	frame.AnchorPoint = Vector2.new(0.5, 0)
+	frame.Position = UDim2.fromScale(0.5, 0.05)
+	frame.Size = UDim2.fromScale(0, 0.05)              -- tinggi relatif layar
+	frame.AutomaticSize = Enum.AutomaticSize.X          -- lebar ikut teks
+	frame.BackgroundColor3 = Color3.fromRGB(15, 15, 18)
+	frame.BackgroundTransparency = 0.25
+	frame.BorderSizePixel = 0
+	frame.ZIndex = 10
+	frame.Parent = gui
+	toastFrame = frame
 
-	local pillGrad = Instance.new("UIGradient")
-	pillGrad.Color = ColorSequence.new(Color3.fromRGB(48, 36, 52), Color3.fromRGB(26, 22, 30))
-	pillGrad.Rotation = 90
-	pillGrad.Parent = pill
+	local corner = Instance.new("UICorner")
+	corner.CornerRadius = UDim.new(0.5, 0)
+	corner.Parent = frame
 
-	local pc = Instance.new("UICorner")
-	pc.CornerRadius = UDim.new(0.5, 0)
-	pc.Parent = pill
+	local stroke = Instance.new("UIStroke")
+	stroke.Thickness = 1
+	stroke.Color = Color3.fromRGB(255, 255, 255)
+	stroke.Transparency = 0.8
+	stroke.Parent = frame
 
-	local ps = Instance.new("UIStroke")
-	ps.Thickness = 1.6
-	ps.Color = Color3.fromRGB(255, 200, 225)
-	ps.Transparency = 0.45
-	ps.Parent = pill
+	local padding = Instance.new("UIPadding")
+	padding.PaddingLeft  = UDim.new(0, 18)
+	padding.PaddingRight = UDim.new(0, 18)
+	padding.Parent = frame
 
-	-- titik kecil indikator + label
-	local pad = Instance.new("UIPadding")
-	pad.PaddingLeft = UDim.new(0, 14)
-	pad.PaddingRight = UDim.new(0, 14)
-	pad.Parent = pill
+	local sizeC = Instance.new("UISizeConstraint")
+	sizeC.MinSize = Vector2.new(40, 0)
+	sizeC.MaxSize = Vector2.new(520, math.huge)
+	sizeC.Parent = frame
 
-	local statusLbl = Instance.new("TextLabel")
-	statusLbl.Name = "StatusLabel"
-	statusLbl.BackgroundTransparency = 1
-	statusLbl.Size = UDim2.fromScale(1, 1)
-	statusLbl.Font = Enum.Font.GothamMedium
-	statusLbl.TextScaled = true
-	statusLbl.TextColor3 = Color3.fromRGB(255, 232, 244)
-	statusLbl.Text = "Waiting for partner"
-	statusLbl.ZIndex = 11
-	statusLbl.Parent = pill
+	local scale = Instance.new("UIScale")
+	scale.Scale = 1
+	scale.Parent = frame
+	toastScale = scale
 
-	local sc = Instance.new("UITextSizeConstraint")
-	sc.MaxTextSize = 18
-	sc.MinTextSize = 8
-	sc.Parent = statusLbl
+	local lbl = Instance.new("TextLabel")
+	lbl.Name = "Label"
+	lbl.BackgroundTransparency = 1
+	lbl.AutomaticSize = Enum.AutomaticSize.X
+	lbl.Size = UDim2.fromScale(0, 1)
+	lbl.Font = Enum.Font.GothamMedium
+	lbl.TextScaled = true
+	lbl.TextColor3 = Color3.fromRGB(255, 240, 248)
+	lbl.Text = ""
+	lbl.ZIndex = 11
+	lbl.Parent = frame
+	toastLabel = lbl
 
-	-- ---- Countdown ring (tengah layar) ----
-	local ring = Instance.new("Frame")
-	ring.Name = "Ring"
-	ring.AnchorPoint = Vector2.new(0.5, 0.5)
-	ring.Position = UDim2.fromScale(0.5, 0.42)
-	ring.Size = UDim2.fromScale(0.16, 0.16)
-	ring.SizeConstraint = Enum.SizeConstraint.RelativeYY
-	ring.BackgroundColor3 = Color3.fromRGB(26, 22, 30)
-	ring.BackgroundTransparency = 0.2
-	ring.BorderSizePixel = 0
-	ring.Visible = false
-	ring.ZIndex = 12
-	ring.Parent = gui
-
-	local rc = Instance.new("UICorner")
-	rc.CornerRadius = UDim.new(0.5, 0)
-	rc.Parent = ring
-
-	local rs = Instance.new("UIStroke")
-	rs.Thickness = 3
-	rs.Color = Color3.fromRGB(255, 190, 220)
-	rs.Transparency = 0.1
-	rs.Parent = ring
-
-	local countLbl = Instance.new("TextLabel")
-	countLbl.Name = "CountLabel"
-	countLbl.AnchorPoint = Vector2.new(0.5, 0.5)
-	countLbl.Position = UDim2.fromScale(0.5, 0.5)
-	countLbl.Size = UDim2.fromScale(0.9, 0.9)
-	countLbl.BackgroundTransparency = 1
-	countLbl.Font = Enum.Font.FredokaOne
-	countLbl.TextScaled = true
-	countLbl.TextColor3 = Color3.fromRGB(255, 255, 255)
-	countLbl.Text = "5"
-	countLbl.ZIndex = 13
-	countLbl.Parent = ring
-
-	local uiScale = Instance.new("UIScale")
-	uiScale.Scale = 1
-	uiScale.Parent = ring
-
-	-- fade in pill
-	local fadeIn = TweenService:Create(pill, TweenInfo.new(0.3, Enum.EasingStyle.Quad), { BackgroundTransparency = 0.15 })
-	fadeIn:Play()
-
-	return gui
+	local tsc = Instance.new("UITextSizeConstraint")
+	tsc.MaxTextSize = 20
+	tsc.MinTextSize = 10
+	tsc.Parent = lbl
 end
 
-local function showWaiting()
-	local gui = ensurePadGui()
-	local pill = gui:FindFirstChild("Pill")
-	local ring = gui:FindFirstChild("Ring")
-	if pill then
-		pill.Visible = true
-		local lbl = pill:FindFirstChild("StatusLabel")
-		if lbl then lbl.Text = "Waiting for partner" end
+local function showToast(text, autoHide)
+	ensureToast()
+	if not toastLabel then return end
+	toastLabel.Text = text
+
+	-- pop kecil tiap update
+	if toastScale then
+		toastScale.Scale = 1.12
+		if popTween then popTween:Cancel() end
+		popTween = TweenService:Create(toastScale, TweenInfo.new(0.25, Enum.EasingStyle.Back, Enum.EasingDirection.Out), { Scale = 1 })
+		popTween:Play()
 	end
-	if ring then ring.Visible = false end
-end
 
-local function showCountdown(count)
-	local gui = ensurePadGui()
-	local pill = gui:FindFirstChild("Pill")
-	local ring = gui:FindFirstChild("Ring")
-	if pill then
-		pill.Visible = true
-		local lbl = pill:FindFirstChild("StatusLabel")
-		if lbl then lbl.Text = "Get ready" end
-	end
-	if not ring then return end
-
-	ring.Visible = true
-	local countLbl = ring:FindFirstChild("CountLabel")
-	if countLbl then countLbl.Text = tostring(count) end
-
-	-- pop per angka
-	local s = ring:FindFirstChildOfClass("UIScale")
-	if s then
-		s.Scale = 1.35
-		if countdownTween then countdownTween:Cancel() end
-		countdownTween = TweenService:Create(s, TweenInfo.new(0.4, Enum.EasingStyle.Back, Enum.EasingDirection.Out), { Scale = 1 })
-		countdownTween:Play()
+	if hideThread then pcall(task.cancel, hideThread); hideThread = nil end
+	if autoHide then
+		hideThread = task.delay(autoHide, function()
+			if toastFrame then
+				local tw = TweenService:Create(toastFrame, TweenInfo.new(0.2), { BackgroundTransparency = 1 })
+				tw:Play()
+				tw.Completed:Connect(destroyToast)
+			end
+		end)
 	end
 end
 
 -- =====================================================================
 -- Cutscene runner
 -- =====================================================================
-
 local function stopActive()
 	if activeRunner then
 		local r = activeRunner
@@ -199,12 +145,11 @@ end
 
 StartStory.OnClientEvent:Connect(function(payload)
 	if typeof(payload) ~= "table" or not (payload.GirlUserId and payload.BoyUserId) then return end
-	destroyPadGui()
+	destroyToast()
 	stopActive()
 
 	local runner = CutsceneRunner.new()
 	activeRunner = runner
-
 	task.spawn(function()
 		runner:Run(payload, function()
 			if activeRunner == runner then activeRunner = nil end
@@ -219,34 +164,14 @@ end)
 
 PadStatus.OnClientEvent:Connect(function(statusType, data)
 	if statusType == "Waiting" then
-		showWaiting()
+		showToast("Waiting for partner...")
 	elseif statusType == "Countdown" then
-		showCountdown(data)
+		showToast("Starting in " .. tostring(data))
+	elseif statusType == "Start" then
+		showToast("Start!")
 	elseif statusType == "Cancel" then
-		-- "Partner not found" sebentar lalu balik waiting
-		local gui = ensurePadGui()
-		local pill = gui and gui:FindFirstChild("Pill")
-		local ring = gui and gui:FindFirstChild("Ring")
-		if ring then ring.Visible = false end
-		if pill then
-			pill.Visible = true
-			local lbl = pill:FindFirstChild("StatusLabel")
-			if lbl then lbl.Text = "Partner not found" end
-			task.delay(2, function()
-				if padGui and padGui.Parent then showWaiting() end
-			end)
-		end
+		showToast("Canceled", 1.4)
 	elseif statusType == "Hide" then
-		-- Player keluar pad
-		if padGui then
-			local pill = padGui:FindFirstChild("Pill")
-			if pill then
-				local tw = TweenService:Create(pill, TweenInfo.new(0.25, Enum.EasingStyle.Quad), { BackgroundTransparency = 1 })
-				tw:Play()
-				tw.Completed:Connect(function() destroyPadGui() end)
-			else
-				destroyPadGui()
-			end
-		end
+		destroyToast()
 	end
 end)

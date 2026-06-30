@@ -1,24 +1,25 @@
 --!nonstrict
 -- CutsceneRunner: orkestrasi cutscene 3D di client.
--- Fix: avatar + animasi ready SEBELUM kamera fade in (wait 0.15s setelah PlayAnimation).
--- TextController: per-kata dekat karakter (WorldToViewportPoint).
--- ImageController: sticker dengan Target Girl/Boy/Screen.
+-- Flow tiap scene: GROUND avatar -> play anim -> tunggu pose masuk -> set kamera -> fade in.
+-- Lirik per-phrase (LyricTextController) + sticker per-scene (SceneImageController).
+-- Preload: clone sekali + anim scene sekarang & berikutnya saja (bukan semua sekaligus).
 -- Cleanup total via Janitor.
 
-local Players          = game:GetService("Players")
-local SoundService     = game:GetService("SoundService")
-local Workspace        = game:GetService("Workspace")
-local UserInputService = game:GetService("UserInputService")
+local Players           = game:GetService("Players")
+local SoundService      = game:GetService("SoundService")
+local Workspace         = game:GetService("Workspace")
+local UserInputService  = game:GetService("UserInputService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local ContentProvider   = game:GetService("ContentProvider")
 
 local Config = require(ReplicatedStorage:WaitForChild("PhotoStoryConfig"))
 
 local Janitor              = require(script.Parent.Janitor)
 local AvatarClone          = require(script.Parent.AvatarClone)
 local CameraDirector       = require(script.Parent.CameraDirector)
-local TransitionController = require(script.Parent.TransitionController)
-local TextController       = require(script.Parent.TextController)
-local ImageController      = require(script.Parent.ImageController)
+local TransitionController  = require(script.Parent.TransitionController)
+local LyricTextController   = require(script.Parent.LyricTextController)
+local SceneImageController  = require(script.Parent.SceneImageController)
 
 local CutsceneRunner = {}
 CutsceneRunner.__index = CutsceneRunner
@@ -34,13 +35,14 @@ end
 
 function CutsceneRunner.new()
 	local self = setmetatable({}, CutsceneRunner)
-	self._janitor  = Janitor.new()
-	self._token    = { cancelled = false }
-	self._finished = false
-	self._lowEnd   = detectLowEnd()
-	self._clones   = {}
-	self._onFinish = nil
-	self._warned   = {}
+	self._janitor   = Janitor.new()
+	self._token     = { cancelled = false }
+	self._finished  = false
+	self._lowEnd    = detectLowEnd()
+	self._clones    = {}
+	self._onFinish  = nil
+	self._warned    = {}
+	self._preloaded = {}
 	return self
 end
 
@@ -73,8 +75,8 @@ function CutsceneRunner:_buildUI()
 	self._screen = screen
 
 	self._transition = TransitionController.new(screen, Config, self._lowEnd, self._janitor)
-	self._text       = TextController.new(screen, Config, self._lowEnd, self._janitor)
-	self._images     = ImageController.new(screen, Config, self._lowEnd, self._janitor)
+	self._text       = LyricTextController.new(screen, Config, self._lowEnd, self._janitor)
+	self._images     = SceneImageController.new(screen, Config, self._lowEnd, self._janitor)
 end
 
 function CutsceneRunner:_startMusic()
@@ -154,57 +156,79 @@ function CutsceneRunner:_resolveScene(scenesFolder, scene)
 	return { camera = camera, girl = girl, boy = boy }
 end
 
+-- Preload anim untuk satu scene (current/next saja). Aman dipanggil berulang (dedupe).
+function CutsceneRunner:_preloadScene(scene)
+	if not scene then return end
+	if self._preloaded[scene.Name] then return end
+	self._preloaded[scene.Name] = true
+	local a = scene.Animations or {}
+	local assets = {}
+	for _, id in pairs({ a.Girl, a.Boy }) do
+		if typeof(id) == "string" and string.match(id, "^rbxassetid://%d+$") then
+			local anim = Instance.new("Animation")
+			anim.AnimationId = id
+			assets[#assets + 1] = anim
+		end
+	end
+	if #assets > 0 then
+		pcall(function() ContentProvider:PreloadAsync(assets) end)
+		for _, x in ipairs(assets) do x:Destroy() end
+	end
+end
+
+function CutsceneRunner:_placeAndAnimate(scene, parts)
+	-- Ground placement (titik = patokan; player turun ke lantai di bawahnya).
+	if self._clones.Girl and parts.girl then
+		local ok, grounded = self._clones.Girl:PlaceAt(parts.girl)
+		if ok and not grounded then
+			self:_warnOnce("gndGirl_" .. scene.Name, "GirlPoint di '" .. scene.Name .. "' tidak ada lantai/part di bawahnya — pakai posisi titik.")
+		end
+	end
+	if self._clones.Boy and parts.boy then
+		local ok, grounded = self._clones.Boy:PlaceAt(parts.boy)
+		if ok and not grounded then
+			self:_warnOnce("gndBoy_" .. scene.Name, "BoyPoint di '" .. scene.Name .. "' tidak ada lantai/part di bawahnya — pakai posisi titik.")
+		end
+	end
+
+	-- Play anim sebelum kamera reveal.
+	if self._clones.Girl then self._clones.Girl:PlayAnimation(scene.Animations and scene.Animations.Girl) end
+	if self._clones.Boy  then self._clones.Boy:PlayAnimation(scene.Animations and scene.Animations.Boy) end
+
+	-- Tunggu pose benar2 masuk (settle 0.15s + poll maks 0.35s). Anim gagal -> lanjut (idle).
+	if not self:_wait(0.15) then return false end
+	local deadline = os.clock() + 0.35
+	local function bothReady()
+		local g, b = self._clones.Girl, self._clones.Boy
+		local gOk = (not g) or (not g:HasAnim()) or g:IsPosed()
+		local bOk = (not b) or (not b:HasAnim()) or b:IsPosed()
+		return gOk and bOk
+	end
+	while not bothReady() and os.clock() < deadline do
+		if self._token.cancelled then return false end
+		task.wait()
+	end
+	return not self._token.cancelled
+end
+
 function CutsceneRunner:_runScenes(scenesFolder)
 	local scenes     = Config.Scenes or {}
 	local transition = self._transition
 	local camera     = self._camera
 
-	-- Tutup layar dulu sebelum scene pertama
 	transition:CoverInstant(scenes[1] and scenes[1].TransitionIn or "FadeBlack")
+	self:_preloadScene(scenes[1])
 
-	for _, scene in ipairs(scenes) do
+	for idx, scene in ipairs(scenes) do
 		if self._token.cancelled then break end
 
 		local parts = self:_resolveScene(scenesFolder, scene)
-		if not parts then continue end  -- scene tidak valid, skip
+		if not parts then continue end
 
-		-- 1. Tempatkan avatar di titik scene
-		if self._clones.Girl and parts.girl then
-			self._clones.Girl:PlaceAt(parts.girl, true)
-		end
-		if self._clones.Boy and parts.boy then
-			self._clones.Boy:PlaceAt(parts.boy, true)
-		end
+		-- 1-7. Ground + anim + tunggu pose.
+		if not self:_placeAndAnimate(scene, parts) then break end
 
-		-- 2. Mulai animasi SEBELUM kamera reveal
-		if self._clones.Girl then
-			self._clones.Girl:PlayAnimation(scene.Animations and scene.Animations.Girl)
-		end
-		if self._clones.Boy then
-			self._clones.Boy:PlayAnimation(scene.Animations and scene.Animations.Boy)
-		end
-
-		-- 3. Tunggu sampai animasi BENAR2 jalan (pose masuk) sebelum kamera reveal.
-		--    Poll IsPosed() maks ~0.35s. Kalau anim gagal load, lanjut (avatar idle, tidak stuck).
-		do
-			local deadline = os.clock() + 0.35
-			local function bothReady()
-				local g = self._clones.Girl
-				local b = self._clones.Boy
-				local gOk = (not g) or (not g:HasAnim()) or g:IsPosed()
-				local bOk = (not b) or (not b:HasAnim()) or b:IsPosed()
-				return gOk and bOk
-			end
-			-- minimal settle supaya pose terlihat, lalu tunggu pose
-			if not self:_wait(0.12) then break end
-			while not bothReady() and os.clock() < deadline do
-				if self._token.cancelled then break end
-				task.wait()
-			end
-			if self._token.cancelled then break end
-		end
-
-		-- 4. Set kamera ke CameraPart scene ini
+		-- 8. Set kamera ke CameraPart.
 		local camCfg = scene.Camera or {}
 		camera:SetScene(
 			parts.camera,
@@ -214,59 +238,34 @@ function CutsceneRunner:_runScenes(scenesFolder)
 			scene.Duration
 		)
 
-		-- 5. Siapkan overlay + caption
-		self._images:SetScene(scene, self._token)
-		self._text:SetScene(scene.Text)
+		-- 9. Overlay sticker + lirik + vignette.
+		self._images:SetScene(scene.Name, self._token)
+		self._text:SetScene()
 		transition:ShowVignette(scene.Vignette == true, 0.4)
 		if (scene.TransitionIn or "FadeBlack") ~= "Blur" then
 			transition:ResetBlur()
 		end
 
-		-- 6. Fade IN (reveal scene — avatar + animasi sudah ready)
+		-- 10. Fade IN (avatar + animasi sudah ready).
 		transition:Play(scene.TransitionIn or "FadeBlack", "In", 0.45)
 		if self._token.cancelled then break end
 
-		-- 7. Spawn text per-kata (non-blocking)
-		task.spawn(function()
-			self._text:Play(scene.Text, self._token)
-		end)
+		-- preload scene berikutnya di background.
+		local nextScene = scenes[idx + 1]
+		if nextScene then
+			task.spawn(function() self:_preloadScene(nextScene) end)
+		end
 
-		-- 8. Tunggu durasi scene
+		-- 11. Lirik berurutan (non-blocking).
+		task.spawn(function() self._text:Play(scene.Text, self._token) end)
+
+		-- 12. Tunggu durasi.
 		if not self:_wait(scene.Duration or 3) then break end
 
-		-- 9. Akhir scene: bersihkan, fade out
-		self._text:FadeOut(0.25)
-		self._text:ClearWords()
+		-- 13. Akhir scene: bersihkan, transisi keluar.
+		self._text:Clear()
 		transition:Play(scene.TransitionOut or "FadeBlack", "Out", 0.4)
-		self._images:ClearScene()
-	end
-end
-
-function CutsceneRunner:_preload()
-	local ContentProvider = game:GetService("ContentProvider")
-	local assets = {}
-	-- model clone
-	for _, c in pairs(self._clones) do
-		local m = c.GetModel and c:GetModel()
-		if m then assets[#assets + 1] = m end
-	end
-	-- animasi tiap scene
-	for _, scene in ipairs(Config.Scenes or {}) do
-		local a = scene.Animations or {}
-		for _, id in pairs({ a.Girl, a.Boy }) do
-			if typeof(id) == "string" and string.match(id, "^rbxassetid://%d+$") then
-				local anim = Instance.new("Animation")
-				anim.AnimationId = id
-				assets[#assets + 1] = anim
-			end
-		end
-	end
-	if #assets > 0 then
-		pcall(function() ContentProvider:PreloadAsync(assets) end)
-	end
-	-- buang Animation sementara
-	for _, a in ipairs(assets) do
-		if typeof(a) == "Instance" and a:IsA("Animation") then a:Destroy() end
+		self._images:Clear()
 	end
 end
 
@@ -276,24 +275,28 @@ function CutsceneRunner:Run(payload, onFinish)
 	self:_buildUI()
 	self:_disableControls()
 
-	-- Tutup layar SEBELUM ambil alih kamera + preload (sembunyikan snap/loading).
+	-- Tutup layar SEBELUM ambil alih kamera (sembunyikan snap/loading).
 	self._transition:CoverInstant((Config.Scenes and Config.Scenes[1] and Config.Scenes[1].TransitionIn) or "FadeBlack")
 
 	self._camera = CameraDirector.new(self._janitor, self._lowEnd)
 	self._camera:Begin()
 	self._text:Begin()
 
-	-- Berikan referensi clones ke text & image controller (untuk WorldToViewportPoint)
-	-- Clones belum dibangun di sini; kita set setelah buildClones.
 	self:_startMusic()
 	self:_buildClones(payload)
 
-	-- Setelah build, berikan clone refs ke controllers
 	self._text:SetClones(self._clones)
 	self._images:SetClones(self._clones)
 
-	-- Preload model clone + semua animasi scene supaya tidak nge-lag/late saat shoot.
-	self:_preload()
+	-- preload model clone sekali (ringan; render dulu biar tidak kedip).
+	do
+		local models = {}
+		for _, c in pairs(self._clones) do
+			local m = c:GetModel()
+			if m then models[#models + 1] = m end
+		end
+		if #models > 0 then pcall(function() ContentProvider:PreloadAsync(models) end) end
+	end
 
 	self._images:BeginGlobals()
 
@@ -316,13 +319,8 @@ function CutsceneRunner:_finish()
 	self._finished = true
 	self._token.cancelled = true
 
-	-- Bersihkan kata-kata text yang masih ada
-	if self._text then
-		pcall(function() self._text:ClearWords() end)
-	end
-	if self._images then
-		pcall(function() self._images:ClearScene() end)
-	end
+	if self._text then pcall(function() self._text:Clear() end) end
+	if self._images then pcall(function() self._images:Clear() end) end
 
 	for _, clone in pairs(self._clones) do
 		pcall(function() clone:Destroy() end)

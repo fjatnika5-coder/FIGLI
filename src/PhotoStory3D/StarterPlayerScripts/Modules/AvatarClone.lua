@@ -1,19 +1,18 @@
 --!nonstrict
 -- AvatarClone: avatar cutscene, OTOMATIS dari player yang injek pad.
--- Strategi utama: clone karakter LIVE (andal & persis). Fallback HumanoidDescription.
--- PlaceAt: RAYCAST turun dari titik -> kaki nempel permukaan (tidak nembus / tidak melayang),
---          walau titik di atas part. HRP anchored -> diam di tempat (tidak benar2 jatuh fisika).
+-- Clone karakter LIVE (andal & persis). Fallback HumanoidDescription.
+-- Penempatan tanah didelegasikan ke CharacterPlacement (raycast turun).
 -- Maks 1 AnimationTrack hidup -> aman limit 64.
 
 local Players   = game:GetService("Players")
-local Workspace = game:GetService("Workspace")
+
+local CharacterPlacement = require(script.Parent.CharacterPlacement)
 
 local AvatarClone = {}
 AvatarClone.__index = AvatarClone
 
 local CLONE_PREFIX = "PhotoStoryClone_"
 
--- Buang yang berat/ganggu; sisakan visual + Motor6D + Humanoid + Animator + accessory.
 local function strip(model)
 	for _, d in ipairs(model:GetDescendants()) do
 		if d:IsA("LuaSourceContainer")
@@ -31,9 +30,7 @@ local function strip(model)
 		end
 	end
 	local hrp = model:FindFirstChild("HumanoidRootPart")
-	if hrp then
-		hrp.Anchored = true -- root diam; limb tetap dianimasikan Motor6D
-	end
+	if hrp then hrp.Anchored = true end
 end
 
 local function prepHumanoid(model)
@@ -62,10 +59,8 @@ end
 
 function AvatarClone:Build()
 	if self._ready then return true end
-
 	local model
 
-	-- 1) Clone karakter live.
 	local player = Players:GetPlayerByUserId(self._userId)
 	local src = player and player.Character
 	if src and src.Parent and src:FindFirstChild("HumanoidRootPart") then
@@ -76,7 +71,6 @@ function AvatarClone:Build()
 		if ok and clone then model = clone end
 	end
 
-	-- 2) Fallback HumanoidDescription.
 	if not model then
 		local okDesc, desc = pcall(function()
 			return Players:GetHumanoidDescriptionFromUserId(self._userId)
@@ -102,72 +96,10 @@ function AvatarClone:Build()
 	return true
 end
 
-local function pointCFrame(point)
-	if not point then return nil end
-	if point:IsA("BasePart") then return point.CFrame
-	elseif point:IsA("Attachment") then return point.WorldCFrame
-	elseif point:IsA("Model") then return point:GetPivot() end
-	return nil
-end
-
--- Daftar yang di-ignore raycast: clone ini + semua karakter player + semua clone PhotoStory.
-local function buildIgnore(selfModel)
-	local ignore = { selfModel }
-	for _, p in ipairs(Players:GetPlayers()) do
-		if p.Character then ignore[#ignore + 1] = p.Character end
-	end
-	for _, c in ipairs(Workspace:GetChildren()) do
-		if c:IsA("Model") and string.sub(c.Name, 1, #CLONE_PREFIX) == CLONE_PREFIX and c ~= selfModel then
-			ignore[#ignore + 1] = c
-		end
-	end
-	return ignore
-end
-
--- Tempatkan di titik scene. footAlign = kaki nempel permukaan (raycast turun).
-function AvatarClone:PlaceAt(point, footAlign)
-	if not self._model then return false end
-	local cf = pointCFrame(point)
-	if not cf then return false end
-
-	if self._model.Parent == nil then
-		self._model.Parent = Workspace
-	end
-
-	-- Orientasi & XZ dari titik dulu.
-	self._model:PivotTo(cf)
-
-	if footAlign ~= false then
-		-- Cari permukaan di bawah titik (terrain / part anchored) lewat raycast.
-		local rp = RaycastParams.new()
-		rp.FilterType = Enum.RaycastFilterType.Exclude
-		rp.FilterDescendantsInstances = buildIgnore(self._model)
-		rp.IgnoreWater = false
-
-		local origin = cf.Position + Vector3.new(0, 2, 0)
-		local result = Workspace:Raycast(origin, Vector3.new(0, -500, 0), rp)
-
-		-- Y target kaki: permukaan kalau ketemu, kalau tidak pakai Y titik.
-		local groundY = cf.Position.Y
-		if result then
-			-- Hanya pakai kalau part anchored / terrain (biar tidak nempel objek gerak).
-			local inst = result.Instance
-			if inst == nil or (inst:IsA("BasePart") and inst.Anchored) or inst:IsA("Terrain") then
-				groundY = result.Position.Y
-			end
-		end
-
-		-- Angkat/turunkan supaya bagian bawah rig = groundY.
-		local bbCF, bbSize = self._model:GetBoundingBox()
-		local bottomY = bbCF.Position.Y - bbSize.Y * 0.5
-		local lift = groundY - bottomY
-		self._model:PivotTo(CFrame.new(0, lift, 0) * self._model:GetPivot())
-	end
-
-	-- Pastikan HRP tetap anchored setelah pivot (diam, tidak melayang/jatuh).
-	local hrp = self._model:FindFirstChild("HumanoidRootPart")
-	if hrp then hrp.Anchored = true end
-	return true
+-- Tempatkan di titik scene (grounded). Return ok, grounded.
+function AvatarClone:PlaceAt(point)
+	if not self._model then return false, false end
+	return CharacterPlacement.PlaceModel(self._model, point)
 end
 
 function AvatarClone:PlayAnimation(animId)
@@ -194,12 +126,10 @@ function AvatarClone:PlayAnimation(animId)
 	self._currentAnimId = animId
 end
 
--- True kalau track sudah benar2 jalan (pose sudah masuk).
 function AvatarClone:IsPosed()
 	return self._track ~= nil and self._track.IsPlaying == true
 end
 
--- True kalau punya animasi yang seharusnya jalan (untuk tahu perlu ditunggu atau tidak).
 function AvatarClone:HasAnim()
 	return self._track ~= nil
 end

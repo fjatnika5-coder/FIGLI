@@ -40,12 +40,32 @@ StarterPlayer/StarterPlayerScripts
 └── Modules                     Folder
     ├── Janitor                 ModuleScript
     ├── AvatarClone             ModuleScript
+    ├── CharacterPlacement      ModuleScript  (raycast grounding)
     ├── CameraDirector          ModuleScript
     ├── TransitionController    ModuleScript
-    ├── TextController          ModuleScript
-    ├── ImageController         ModuleScript
+    ├── LyricTextController     ModuleScript  (lirik per-phrase)
+    ├── SceneImageController    ModuleScript  (sticker per scene)
     └── CutsceneRunner          ModuleScript
 ```
+
+## Sticker per scene — tinggal isi Image id
+
+`Config.SceneImages` di config, key = nama scene. Ganti `Image = ""` jadi
+`Image = "rbxassetid://123..."`. Kosong = di-skip diam-diam. `Target` `Girl`/`Boy` =
+nempel dekat karakter (WorldToViewportPoint + `Offset`); `Screen` = pakai `Position`.
+`Animation`: Pop/Float/Wiggle/Pulse/PopWiggle.
+
+## Lirik per-phrase
+
+`Text.Mode = "LyricPhrase"`. `Text.Text` lama di-split otomatis jadi phrase
+(`WordsPerPhrase`, default 2), muncul BERURUTAN, rapi (stack), dekat karakter.
+`Target`: Girl/Boy/Center/AlternatePhrase.
+
+## Grounding avatar
+
+`GirlPoint`/`BoyPoint` = patokan X/Z + arah hadap, BUKAN posisi kaki. Raycast turun cari
+lantai (terrain/part anchored) -> kaki nempel, tidak melayang/nembus. Tidak ada lantai ->
+warn sekali + fallback titik.
 
 ## Gambar overlay (logo/sticker/dekorasi)
 

@@ -187,6 +187,16 @@ local function startCountdown(girl, boy)
 		-- Countdown finished
 		token.cancelled = true
 		cdGirl = nil; cdBoy = nil
+		-- "Start!" toast sebentar lalu mulai (validasi terakhir).
+		fireStatus(girl, "Start")
+		fireStatus(boy,  "Start")
+		task.wait(0.4)
+		if not (isOnGirl(girl) and isOnBoy(boy) and girl.Parent and boy.Parent
+			and not isBusy(girl) and not isBusy(boy)) then
+			if girl.Parent then fireStatus(girl, "Cancel") end
+			if boy.Parent  then fireStatus(boy,  "Cancel") end
+			return
+		end
 		if os.clock() - lastStart >= COOLDOWN then
 			lastStart = os.clock()
 			startPair(girl, boy)
