@@ -192,11 +192,15 @@ function CutsceneRunner:_placeAndAnimate(scene, parts)
 	end
 
 	-- Play anim sebelum kamera reveal.
-	if self._clones.Girl then self._clones.Girl:PlayAnimation(scene.Animations and scene.Animations.Girl) end
-	if self._clones.Boy  then self._clones.Boy:PlayAnimation(scene.Animations and scene.Animations.Boy) end
+	-- PHOTO POSE: play anim sebentar sampai PoseTime lalu freeze (AdjustSpeed 0) -> diam seperti foto.
+	-- FreezePose default true. Anim gagal -> idle pose, tidak stuck.
+	local a = scene.Animations or {}
+	local freeze = a.FreezePose ~= false
+	if self._clones.Girl then self._clones.Girl:SetPose(a.Girl, a.GirlPoseTime or 0.3, freeze) end
+	if self._clones.Boy  then self._clones.Boy:SetPose(a.Boy,  a.BoyPoseTime  or 0.3, freeze) end
 
-	-- Tunggu pose benar2 masuk (settle 0.15s + poll maks 0.35s). Anim gagal -> lanjut (idle).
-	if not self:_wait(0.15) then return false end
+	-- Tunggu pose benar2 masuk (settle 0.2s + poll maks 0.35s).
+	if not self:_wait(0.2) then return false end
 	local deadline = os.clock() + 0.35
 	local function bothReady()
 		local g, b = self._clones.Girl, self._clones.Boy
@@ -228,15 +232,17 @@ function CutsceneRunner:_runScenes(scenesFolder)
 		-- 1-7. Ground + anim + tunggu pose.
 		if not self:_placeAndAnimate(scene, parts) then break end
 
-		-- 8. Set kamera ke CameraPart.
+		-- 8. Set kamera ke CameraPart. PhotoMode (default true): shake dimatikan/dikecilkan,
+		--    zoom sangat lembut -> terasa seperti foto, bukan kamera goyang.
 		local camCfg = scene.Camera or {}
-		camera:SetScene(
-			parts.camera,
-			camCfg.FOV,
-			camCfg.Shake    and (camCfg.ShakeAmount or 0) or 0,
-			camCfg.SlowZoom and (camCfg.ZoomAmount  or 0) or 0,
-			scene.Duration
-		)
+		local photoMode = camCfg.PhotoMode ~= false
+		local shake = camCfg.Shake and (camCfg.ShakeAmount or 0) or 0
+		local zoom  = camCfg.SlowZoom and (camCfg.ZoomAmount or 0) or 0
+		if photoMode then
+			shake = math.min(shake, 0.02)      -- foto: nyaris tanpa shake
+			zoom  = math.min(zoom, 1.5)        -- dolly halus saja
+		end
+		camera:SetScene(parts.camera, camCfg.FOV, shake, zoom, scene.Duration)
 
 		-- 9. Overlay sticker + lirik + vignette.
 		self._images:SetScene(scene.Name, self._token)

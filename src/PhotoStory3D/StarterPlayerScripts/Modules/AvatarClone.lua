@@ -126,8 +126,42 @@ function AvatarClone:PlayAnimation(animId)
 	self._currentAnimId = animId
 end
 
+-- PHOTO POSE: play anim sampai poseTime lalu freeze (AdjustSpeed 0) -> avatar diam seperti foto.
+-- Gagal load -> avatar idle, tidak stuck. Track lama selalu dibuang dulu (aman limit 64).
+function AvatarClone:SetPose(animId, poseTime, freeze)
+	self:PlayAnimation(animId)
+	local track = self._track
+	if not track then return end -- anim gagal/kosong -> idle pose
+
+	poseTime = poseTime or 0.3
+
+	-- Tunggu track mulai jalan (maks 0.5s), lalu set posisi pose.
+	local deadline = os.clock() + 0.5
+	while not track.IsPlaying and os.clock() < deadline do
+		task.wait()
+	end
+	if track ~= self._track then return end -- sudah diganti scene lain
+
+	pcall(function()
+		local len = track.Length
+		if len and len > 0 then
+			track.TimePosition = math.min(poseTime, math.max(len - 0.05, 0))
+		end
+	end)
+
+	if freeze ~= false then
+		pcall(function() track:AdjustSpeed(0) end)
+		self._frozen = true
+	else
+		self._frozen = false
+	end
+end
+
 function AvatarClone:IsPosed()
-	return self._track ~= nil and self._track.IsPlaying == true
+	local t = self._track
+	if not t then return false end
+	if self._frozen then return true end -- pose beku = siap
+	return t.IsPlaying == true
 end
 
 function AvatarClone:HasAnim()
@@ -142,6 +176,7 @@ function AvatarClone:StopAnimation()
 		end)
 		self._track         = nil
 		self._currentAnimId = nil
+		self._frozen        = false
 	end
 end
 
