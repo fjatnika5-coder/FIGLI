@@ -140,13 +140,24 @@ local function stopActive()
 		local r = activeRunner
 		activeRunner = nil
 		r:Stop()
+		return r
 	end
+	return nil
 end
 
 StartStory.OnClientEvent:Connect(function(payload)
 	if typeof(payload) ~= "table" or not (payload.GirlUserId and payload.BoyUserId) then return end
 	destroyToast()
-	stopActive()
+
+	-- Stop runner lama dan TUNGGU cleanup selesai dulu (maks 3s) sebelum mulai baru.
+	-- Tanpa ini dua runner overlap -> bind kamera saling cabut -> kamera beku/hang.
+	local old = stopActive()
+	if old then
+		local t0 = os.clock()
+		while not old._finished and os.clock() - t0 < 3 do
+			task.wait()
+		end
+	end
 
 	local runner = CutsceneRunner.new()
 	activeRunner = runner

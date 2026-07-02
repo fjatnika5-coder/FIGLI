@@ -9,10 +9,15 @@ local Workspace = game:GetService("Workspace")
 local CameraDirector = {}
 CameraDirector.__index = CameraDirector
 
-local RENDER_NAME = "PhotoStoryCamera"
+-- Nama bind HARUS unik per instance. Kalau fix ("PhotoStoryCamera"), dua runner yang
+-- sempat overlap saling cabut bind -> kamera beku/hang + warning
+-- "UnbindFromRenderStep removed different functions with same reference name 2 times".
+local bindCounter = 0
 
 function CameraDirector.new(janitor, lowEnd)
 	local self = setmetatable({}, CameraDirector)
+	bindCounter += 1
+	self._renderName = "PhotoStoryCamera_" .. tostring(bindCounter)
 	self._janitor = janitor
 	self._lowEnd = lowEnd == true
 	self._camera = Workspace.CurrentCamera
@@ -43,12 +48,16 @@ function CameraDirector:Begin()
 
 	if not self._bound then
 		self._bound = true
-		RunService:BindToRenderStep(RENDER_NAME, Enum.RenderPriority.Camera.Value + 1, function()
+		RunService:BindToRenderStep(self._renderName, Enum.RenderPriority.Camera.Value + 1, function()
 			self:_update()
 		end)
 		self._janitor:Add(function()
-			RunService:UnbindFromRenderStep(RENDER_NAME)
-			self._bound = false
+			if self._bound then
+				self._bound = false
+				pcall(function()
+					RunService:UnbindFromRenderStep(self._renderName)
+				end)
+			end
 		end)
 	end
 end

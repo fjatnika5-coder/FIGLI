@@ -294,15 +294,9 @@ function CutsceneRunner:Run(payload, onFinish)
 	self._text:SetClones(self._clones)
 	self._images:SetClones(self._clones)
 
-	-- preload model clone sekali (ringan; render dulu biar tidak kedip).
-	do
-		local models = {}
-		for _, c in pairs(self._clones) do
-			local m = c:GetModel()
-			if m then models[#models + 1] = m end
-		end
-		if #models > 0 then pcall(function() ContentProvider:PreloadAsync(models) end) end
-	end
+	-- CATATAN: jangan PreloadAsync model clone — part clone tidak punya ContentId,
+	-- engine print error "Item has no Id or FilePath or ContentId". Clone sudah
+	-- ter-render dari karakter live, tidak perlu preload.
 
 	self._images:BeginGlobals()
 
