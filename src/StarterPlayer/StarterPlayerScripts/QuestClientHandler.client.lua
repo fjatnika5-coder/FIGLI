@@ -1,29 +1,25 @@
 -- StarterPlayer > StarterPlayerScripts > QuestClientHandler
 --
 -- CHANGES dari versi sebelumnya:
---   * NEW: BoatCinematicCamera — scriptable follow camera saat naik perahu.
---     - Dipicu server via RemoteEvent StartBoatCamera / StopBoatCamera.
---     - Follow boat pivot (bukan HRP), exponential smoothing frame-rate
---       independent, subtle handheld sway, FOV cinematic per mode.
---     - Cleanup: stop remote, CharacterAdded, boat hilang, double-start.
+--   * Cinematic camera dipindah ke module BoatCinematicCamera (multi-shot,
+--     progress-driven, 11 shot sepanjang path). Handler ini cuma wiring:
+--     StartBoatCamera/StopBoatCamera remote + cleanup saat respawn.
 --   * Music race fix: hard-stop current sound saat music baru main (no overlap).
 --     Fading sounds di-track terpisah supaya tween Completed gak destroy sound
 --     yang udah di-replace.
---   * Hapus dead branch di stopMusic (dulu dua if-branch identical).
---   * Hapus dead variable `pendingOutgoingInviteId`.
 
 local Players           = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Workspace         = game:GetService("Workspace")
 local TweenService      = game:GetService("TweenService")
 local SoundService      = game:GetService("SoundService")
-local RunService        = game:GetService("RunService")
 
-local QuestSystem        = ReplicatedStorage:WaitForChild("QuestSystem")
-local NPCModule          = require(QuestSystem:WaitForChild("NPCModule"))
-local PlayerPickerModule = require(QuestSystem:WaitForChild("PlayerPickerModule"))
-local DuoInviteModule    = require(QuestSystem:WaitForChild("DuoInviteModule"))
-local QuestConfig        = require(QuestSystem:WaitForChild("QuestConfig"))
+local QuestSystem         = ReplicatedStorage:WaitForChild("QuestSystem")
+local NPCModule           = require(QuestSystem:WaitForChild("NPCModule"))
+local PlayerPickerModule  = require(QuestSystem:WaitForChild("PlayerPickerModule"))
+local DuoInviteModule     = require(QuestSystem:WaitForChild("DuoInviteModule"))
+local QuestConfig         = require(QuestSystem:WaitForChild("QuestConfig"))
+local BoatCinematicCamera = require(QuestSystem:WaitForChild("BoatCinematicCamera"))
 
 local Remotes              = ReplicatedStorage:WaitForChild("QuestRemotes")
 local RequestBoat          = Remotes:WaitForChild("RequestBoat")
@@ -136,128 +132,13 @@ end)
 
 ----------------------------------------------------------------
 -- BOAT CINEMATIC CAMERA
--- Follow shot belakang-samping boat. Follow boat pivot (bukan HRP) supaya
--- stabil. Exponential smoothing frame-rate independent + subtle sway.
--- Single state (boatCam); start baru selalu stop yang lama dulu, jadi
--- render bind tidak pernah dobel.
+-- Semua logic di module BoatCinematicCamera (multi-shot, progress-driven).
 ----------------------------------------------------------------
-local CAMERA_BIND_NAME = "QuestBoatCinematicCamera"
-
-local CAMERA_PRESETS = {
-	solo = {
-		offset     = Vector3.new(-7, 5, -14),  -- belakang-samping, boat local space
-		lookOffset = Vector3.new(0, 2.8, 5),
-		fov        = 58,
-	},
-	duo = {
-		offset     = Vector3.new(-9, 6, -17),  -- lebih lebar, dua karakter kelihatan
-		lookOffset = Vector3.new(0, 3.2, 6),
-		fov        = 55,
-	},
-}
-
-local CAM_POS_SMOOTH  = 2.2   -- makin kecil makin floaty
-local CAM_LOOK_SMOOTH = 4.0   -- look point lebih responsif dari posisi
-local CAM_FOV_SMOOTH  = 1.6
-local CAM_SWAY_AMP    = 0.35  -- studs; handheld feel tipis, bukan goyang liar
-local CAM_SWAY_FREQ   = 0.45  -- Hz
-
-local boatCam = nil  -- { boat, preset, saved = { camType, subject, fov } }
-
-local function stopBoatCamera()
-	if not boatCam then return end
-	local saved = boatCam.saved
-	boatCam = nil
-
-	RunService:UnbindFromRenderStep(CAMERA_BIND_NAME)
-
-	local cam = Workspace.CurrentCamera
-	if not cam then return end
-	cam.CameraType = saved.camType
-	cam.FieldOfView = saved.fov
-	-- Subject lama bisa udah destroyed (respawn) — fallback ke humanoid sekarang.
-	if saved.subject and saved.subject.Parent then
-		cam.CameraSubject = saved.subject
-	else
-		local char = player.Character
-		local hum = char and char:FindFirstChildOfClass("Humanoid")
-		if hum then cam.CameraSubject = hum end
-	end
-end
-
-local function startBoatCamera(boat, mode)
-	stopBoatCamera()  -- idempotent; bind lama pasti lepas sebelum bind baru
-
-	if typeof(boat) ~= "Instance" or not boat.Parent then return end
-	local cam = Workspace.CurrentCamera
-	if not cam then return end
-
-	local preset = CAMERA_PRESETS[mode] or CAMERA_PRESETS.solo
-
-	boatCam = {
-		boat = boat,
-		preset = preset,
-		saved = {
-			camType = cam.CameraType,
-			subject = cam.CameraSubject,
-			fov     = cam.FieldOfView,
-		},
-	}
-
-	cam.CameraType = Enum.CameraType.Scriptable
-
-	-- Mulai dari pose kamera sekarang: shot "glide in", bukan snap.
-	local camPos  = cam.CFrame.Position
-	local lookPos = camPos + cam.CFrame.LookVector * 10
-	local clock   = 0
-
-	RunService:BindToRenderStep(CAMERA_BIND_NAME, Enum.RenderPriority.Camera.Value + 1, function(dt)
-		local state = boatCam
-		if not state then return end
-
-		local b = state.boat
-		if not b.Parent then
-			stopBoatCamera()  -- boat destroyed/despawn: langsung restore
-			return
-		end
-
-		local pivot = b:GetPivot()
-		clock += dt
-
-		-- Sway halus di boat local space; shot hidup tapi tidak liar.
-		local sway = Vector3.new(
-			math.sin(clock * CAM_SWAY_FREQ * 2 * math.pi) * CAM_SWAY_AMP,
-			math.sin(clock * CAM_SWAY_FREQ * 1.7 * 2 * math.pi) * CAM_SWAY_AMP * 0.5,
-			0
-		)
-
-		local targetPos  = pivot:PointToWorldSpace(state.preset.offset + sway)
-		local targetLook = pivot:PointToWorldSpace(state.preset.lookOffset)
-
-		-- Exponential smoothing frame-rate independent: alpha = 1 - e^(-k*dt)
-		local aPos  = 1 - math.exp(-CAM_POS_SMOOTH * dt)
-		local aLook = 1 - math.exp(-CAM_LOOK_SMOOTH * dt)
-		local aFov  = 1 - math.exp(-CAM_FOV_SMOOTH * dt)
-
-		camPos  = camPos:Lerp(targetPos, aPos)
-		lookPos = lookPos:Lerp(targetLook, aLook)
-
-		local c = Workspace.CurrentCamera
-		if not c then return end
-		if (lookPos - camPos).Magnitude > 0.01 then
-			c.CFrame = CFrame.lookAt(camPos, lookPos)
-		end
-		c.FieldOfView += (state.preset.fov - c.FieldOfView) * aFov
-	end)
-end
-
 StartBoatCamera.OnClientEvent:Connect(function(boat, mode)
-	startBoatCamera(boat, mode)
+	BoatCinematicCamera.Start(boat, mode)
 end)
 
-StopBoatCamera.OnClientEvent:Connect(function()
-	stopBoatCamera()
-end)
+StopBoatCamera.OnClientEvent:Connect(BoatCinematicCamera.Stop)
 
 ----------------------------------------------------------------
 -- WARNINGS
@@ -283,14 +164,14 @@ end)
 -- RESPAWN: stop music + camera
 ----------------------------------------------------------------
 player.CharacterAdded:Connect(function(char)
-	stopBoatCamera()
+	BoatCinematicCamera.Stop()
 	stopMusic(true)
 	killFadingOut()
 	-- Pastikan kamera nempel ke humanoid baru setelah respawn.
 	task.defer(function()
 		local hum = char:FindFirstChildOfClass("Humanoid") or char:WaitForChild("Humanoid", 5)
 		local cam = Workspace.CurrentCamera
-		if hum and cam and not boatCam then
+		if hum and cam then
 			cam.CameraSubject = hum
 		end
 	end)
