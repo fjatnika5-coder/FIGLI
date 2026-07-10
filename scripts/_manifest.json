@@ -1,0 +1,2426 @@
+[
+ {
+  "ref": 90,
+  "class": "Script",
+  "name": "CharacterMeshSync",
+  "path": "Model/AurasFolder/Aura_Gojo/HumanoidRootPart/CharacterMeshSync",
+  "file": "Model/AurasFolder/Aura_Gojo/HumanoidRootPart/CharacterMeshSync.server.lua",
+  "bytes": 2867
+ },
+ {
+  "ref": 226,
+  "class": "LocalScript",
+  "name": "ContohPemakaian",
+  "path": "Model/AurasFolder/Aura_UnoWings1/ObfuscationSystemByTheDranxX/ContohPemakaian",
+  "file": "Model/AurasFolder/Aura_UnoWings1/ObfuscationSystemByTheDranxX/ContohPemakaian.client.lua",
+  "bytes": 294
+ },
+ {
+  "ref": 227,
+  "class": "Script",
+  "name": "Baca!!",
+  "path": "Model/AurasFolder/Aura_UnoWings1/ObfuscationSystemByTheDranxX/Baca!!",
+  "file": "Model/AurasFolder/Aura_UnoWings1/ObfuscationSystemByTheDranxX/Baca!!.server.lua",
+  "bytes": 1353
+ },
+ {
+  "ref": 230,
+  "class": "Script",
+  "name": "Obf",
+  "path": "Model/AurasFolder/Aura_UnoWings1/ObfuscationSystemByTheDranxX/UngroupServerScriptService/Obf/Obf",
+  "file": "Model/AurasFolder/Aura_UnoWings1/ObfuscationSystemByTheDranxX/UngroupServerScriptService/Obf/Obf.server.lua",
+  "bytes": 2090
+ },
+ {
+  "ref": 232,
+  "class": "Script",
+  "name": "Baca",
+  "path": "Model/AurasFolder/Aura_UnoWings1/ObfuscationSystemByTheDranxX/UngroupReplicatedStorage/Baca",
+  "file": "Model/AurasFolder/Aura_UnoWings1/ObfuscationSystemByTheDranxX/UngroupReplicatedStorage/Baca.server.lua",
+  "bytes": 139
+ },
+ {
+  "ref": 233,
+  "class": "ModuleScript",
+  "name": "Repok",
+  "path": "Model/AurasFolder/Aura_UnoWings1/ObfuscationSystemByTheDranxX/UngroupReplicatedStorage/Repok",
+  "file": "Model/AurasFolder/Aura_UnoWings1/ObfuscationSystemByTheDranxX/UngroupReplicatedStorage/Repok.lua",
+  "bytes": 1542
+ },
+ {
+  "ref": 234,
+  "class": "ModuleScript",
+  "name": "Repok1",
+  "path": "Model/AurasFolder/Aura_UnoWings1/ObfuscationSystemByTheDranxX/UngroupReplicatedStorage/Repok/Repok1",
+  "file": "Model/AurasFolder/Aura_UnoWings1/ObfuscationSystemByTheDranxX/UngroupReplicatedStorage/Repok/Repok1.lua",
+  "bytes": 17902
+ },
+ {
+  "ref": 1888,
+  "class": "Script",
+  "name": "MoveScript",
+  "path": "Model/AurasFolder/Aura_Jiyu/HumanoidRootPart/1/MoveScript",
+  "file": "Model/AurasFolder/Aura_Jiyu/HumanoidRootPart/1/MoveScript.server.lua",
+  "bytes": 132
+ },
+ {
+  "ref": 1913,
+  "class": "Script",
+  "name": "MoveScript",
+  "path": "Model/AurasFolder/Aura_Jiyu/LowerTorso/n2/MoveScript",
+  "file": "Model/AurasFolder/Aura_Jiyu/LowerTorso/n2/MoveScript.server.lua",
+  "bytes": 132
+ },
+ {
+  "ref": 1921,
+  "class": "Script",
+  "name": "MoveScript",
+  "path": "Model/AurasFolder/Aura_Jiyu/LowerTorso/n1/MoveScript",
+  "file": "Model/AurasFolder/Aura_Jiyu/LowerTorso/n1/MoveScript.server.lua",
+  "bytes": 132
+ },
+ {
+  "ref": 3606,
+  "class": "ModuleScript",
+  "name": "Category",
+  "path": "Model/EmoteSystem/Category",
+  "file": "Model/EmoteSystem/Category.lua",
+  "bytes": 54
+ },
+ {
+  "ref": 3607,
+  "class": "ModuleScript",
+  "name": "Animations",
+  "path": "Model/EmoteSystem/Animations",
+  "file": "Model/EmoteSystem/Animations.lua",
+  "bytes": 14012
+ },
+ {
+  "ref": 3638,
+  "class": "ModuleScript",
+  "name": "RodShopConfig",
+  "path": "Model/FishingSystem/RodShopConfig",
+  "file": "Model/FishingSystem/RodShopConfig.lua",
+  "bytes": 1819
+ },
+ {
+  "ref": 3639,
+  "class": "ModuleScript",
+  "name": "FishingConfig",
+  "path": "Model/FishingSystem/FishingConfig",
+  "file": "Model/FishingSystem/FishingConfig.lua",
+  "bytes": 27959
+ },
+ {
+  "ref": 3640,
+  "class": "ModuleScript",
+  "name": "BottleQuestConfig",
+  "path": "Model/FishingSystem/BottleQuestConfig",
+  "file": "Model/FishingSystem/BottleQuestConfig.lua",
+  "bytes": 28668
+ },
+ {
+  "ref": 3642,
+  "class": "ModuleScript",
+  "name": "AnimationController",
+  "path": "Model/FishingSystem/FishingModules/AnimationController",
+  "file": "Model/FishingSystem/FishingModules/AnimationController.lua",
+  "bytes": 15159
+ },
+ {
+  "ref": 3643,
+  "class": "ModuleScript",
+  "name": "GUIManager",
+  "path": "Model/FishingSystem/FishingModules/GUIManager",
+  "file": "Model/FishingSystem/FishingModules/GUIManager.lua",
+  "bytes": 10522
+ },
+ {
+  "ref": 3644,
+  "class": "ModuleScript",
+  "name": "MinigameSystem",
+  "path": "Model/FishingSystem/FishingModules/MinigameSystem",
+  "file": "Model/FishingSystem/FishingModules/MinigameSystem.lua",
+  "bytes": 7034
+ },
+ {
+  "ref": 3645,
+  "class": "ModuleScript",
+  "name": "CastingSystem",
+  "path": "Model/FishingSystem/FishingModules/CastingSystem",
+  "file": "Model/FishingSystem/FishingModules/CastingSystem.lua",
+  "bytes": 10551
+ },
+ {
+  "ref": 3646,
+  "class": "ModuleScript",
+  "name": "DataManager",
+  "path": "Model/FishingSystem/FishingModules/DataManager",
+  "file": "Model/FishingSystem/FishingModules/DataManager.lua",
+  "bytes": 3198
+ },
+ {
+  "ref": 3647,
+  "class": "ModuleScript",
+  "name": "GamepassEffectsHandler",
+  "path": "Model/FishingSystem/FishingModules/GamepassEffectsHandler",
+  "file": "Model/FishingSystem/FishingModules/GamepassEffectsHandler.lua",
+  "bytes": 4022
+ },
+ {
+  "ref": 3648,
+  "class": "ModuleScript",
+  "name": "SoundManager",
+  "path": "Model/FishingSystem/FishingModules/SoundManager",
+  "file": "Model/FishingSystem/FishingModules/SoundManager.lua",
+  "bytes": 1400
+ },
+ {
+  "ref": 3649,
+  "class": "ModuleScript",
+  "name": "PowerBarSystem",
+  "path": "Model/FishingSystem/FishingModules/PowerBarSystem",
+  "file": "Model/FishingSystem/FishingModules/PowerBarSystem.lua",
+  "bytes": 3057
+ },
+ {
+  "ref": 3650,
+  "class": "ModuleScript",
+  "name": "FishingNotificationManager",
+  "path": "Model/FishingSystem/FishingModules/FishingNotificationManager",
+  "file": "Model/FishingSystem/FishingModules/FishingNotificationManager.lua",
+  "bytes": 13379
+ },
+ {
+  "ref": 16843,
+  "class": "ModuleScript",
+  "name": "UI",
+  "path": "Model/Module/UI",
+  "file": "Model/Module/UI.lua",
+  "bytes": 3951
+ },
+ {
+  "ref": 16844,
+  "class": "ModuleScript",
+  "name": "RBXModule",
+  "path": "Model/Module/RBXModule",
+  "file": "Model/Module/RBXModule.lua",
+  "bytes": 2975
+ },
+ {
+  "ref": 16845,
+  "class": "ModuleScript",
+  "name": "ShopModule",
+  "path": "Model/Module/ShopModule",
+  "file": "Model/Module/ShopModule.lua",
+  "bytes": 7721
+ },
+ {
+  "ref": 16846,
+  "class": "ModuleScript",
+  "name": "CashItems",
+  "path": "Model/Module/ShopModule/CashItems",
+  "file": "Model/Module/ShopModule/CashItems.lua",
+  "bytes": 1453
+ },
+ {
+  "ref": 16847,
+  "class": "ModuleScript",
+  "name": "RobuxItems",
+  "path": "Model/Module/ShopModule/RobuxItems",
+  "file": "Model/Module/ShopModule/RobuxItems.lua",
+  "bytes": 45
+ },
+ {
+  "ref": 16848,
+  "class": "ModuleScript",
+  "name": "GroupItems",
+  "path": "Model/Module/ShopModule/GroupItems",
+  "file": "Model/Module/ShopModule/GroupItems.lua",
+  "bytes": 150
+ },
+ {
+  "ref": 16849,
+  "class": "ModuleScript",
+  "name": "GemAuras",
+  "path": "Model/Module/ShopModule/GemAuras",
+  "file": "Model/Module/ShopModule/GemAuras.lua",
+  "bytes": 2284
+ },
+ {
+  "ref": 16850,
+  "class": "ModuleScript",
+  "name": "GemItems",
+  "path": "Model/Module/ShopModule/GemItems",
+  "file": "Model/Module/ShopModule/GemItems.lua",
+  "bytes": 1271
+ },
+ {
+  "ref": 16851,
+  "class": "ModuleScript",
+  "name": "RobuxAuras",
+  "path": "Model/Module/ShopModule/RobuxAuras",
+  "file": "Model/Module/ShopModule/RobuxAuras.lua",
+  "bytes": 41
+ },
+ {
+  "ref": 16852,
+  "class": "ModuleScript",
+  "name": "CashAuras",
+  "path": "Model/Module/ShopModule/CashAuras",
+  "file": "Model/Module/ShopModule/CashAuras.lua",
+  "bytes": 1324
+ },
+ {
+  "ref": 16853,
+  "class": "ModuleScript",
+  "name": "GlobalFunction",
+  "path": "Model/Module/GlobalFunction",
+  "file": "Model/Module/GlobalFunction.lua",
+  "bytes": 2601
+ },
+ {
+  "ref": 16854,
+  "class": "ModuleScript",
+  "name": "Signal",
+  "path": "Model/Module/Signal",
+  "file": "Model/Module/Signal.lua",
+  "bytes": 2539
+ },
+ {
+  "ref": 16855,
+  "class": "ModuleScript",
+  "name": "Promise",
+  "path": "Model/Module/Promise",
+  "file": "Model/Module/Promise.lua",
+  "bytes": 67467
+ },
+ {
+  "ref": 16856,
+  "class": "ModuleScript",
+  "name": "DefaultData",
+  "path": "Model/Module/DefaultData",
+  "file": "Model/Module/DefaultData.lua",
+  "bytes": 350
+ },
+ {
+  "ref": 16857,
+  "class": "ModuleScript",
+  "name": "RegionModule",
+  "path": "Model/Module/RegionModule",
+  "file": "Model/Module/RegionModule.lua",
+  "bytes": 8463
+ },
+ {
+  "ref": 16859,
+  "class": "ModuleScript",
+  "name": "DialogModule",
+  "path": "Model/Modules/DialogModule",
+  "file": "Model/Modules/DialogModule.lua",
+  "bytes": 12756
+ },
+ {
+  "ref": 16872,
+  "class": "ModuleScript",
+  "name": "PoolClient",
+  "path": "Model/ObjectPoolingEngine/Client/PoolClient",
+  "file": "Model/ObjectPoolingEngine/Client/PoolClient.lua",
+  "bytes": 10265
+ },
+ {
+  "ref": 16874,
+  "class": "ModuleScript",
+  "name": "PoolServer",
+  "path": "Model/ObjectPoolingEngine/Server/PoolServer",
+  "file": "Model/ObjectPoolingEngine/Server/PoolServer.lua",
+  "bytes": 8613
+ },
+ {
+  "ref": 16876,
+  "class": "ModuleScript",
+  "name": "EasyPool",
+  "path": "Model/ObjectPoolingEngine/Shared/EasyPool",
+  "file": "Model/ObjectPoolingEngine/Shared/EasyPool.lua",
+  "bytes": 10322
+ },
+ {
+  "ref": 16877,
+  "class": "ModuleScript",
+  "name": "Types",
+  "path": "Model/ObjectPoolingEngine/Shared/Types",
+  "file": "Model/ObjectPoolingEngine/Shared/Types.lua",
+  "bytes": 10389
+ },
+ {
+  "ref": 16879,
+  "class": "ModuleScript",
+  "name": "Pool",
+  "path": "Model/ObjectPoolingEngine/Shared/Core/Pool",
+  "file": "Model/ObjectPoolingEngine/Shared/Core/Pool.lua",
+  "bytes": 22360
+ },
+ {
+  "ref": 16880,
+  "class": "ModuleScript",
+  "name": "PoolManager",
+  "path": "Model/ObjectPoolingEngine/Shared/Core/PoolManager",
+  "file": "Model/ObjectPoolingEngine/Shared/Core/PoolManager.lua",
+  "bytes": 13121
+ },
+ {
+  "ref": 16881,
+  "class": "ModuleScript",
+  "name": "PooledObject",
+  "path": "Model/ObjectPoolingEngine/Shared/Core/PooledObject",
+  "file": "Model/ObjectPoolingEngine/Shared/Core/PooledObject.lua",
+  "bytes": 11491
+ },
+ {
+  "ref": 16882,
+  "class": "ModuleScript",
+  "name": "PoolRegistry",
+  "path": "Model/ObjectPoolingEngine/Shared/Core/PoolRegistry",
+  "file": "Model/ObjectPoolingEngine/Shared/Core/PoolRegistry.lua",
+  "bytes": 3154
+ },
+ {
+  "ref": 16884,
+  "class": "ModuleScript",
+  "name": "DefaultConfigs",
+  "path": "Model/ObjectPoolingEngine/Shared/Config/DefaultConfigs",
+  "file": "Model/ObjectPoolingEngine/Shared/Config/DefaultConfigs.lua",
+  "bytes": 9822
+ },
+ {
+  "ref": 16885,
+  "class": "ModuleScript",
+  "name": "PoolConfig",
+  "path": "Model/ObjectPoolingEngine/Shared/Config/PoolConfig",
+  "file": "Model/ObjectPoolingEngine/Shared/Config/PoolConfig.lua",
+  "bytes": 11661
+ },
+ {
+  "ref": 16887,
+  "class": "ModuleScript",
+  "name": "CleanupStrategy",
+  "path": "Model/ObjectPoolingEngine/Shared/Strategies/CleanupStrategy",
+  "file": "Model/ObjectPoolingEngine/Shared/Strategies/CleanupStrategy.lua",
+  "bytes": 10866
+ },
+ {
+  "ref": 16888,
+  "class": "ModuleScript",
+  "name": "EvictionStrategy",
+  "path": "Model/ObjectPoolingEngine/Shared/Strategies/EvictionStrategy",
+  "file": "Model/ObjectPoolingEngine/Shared/Strategies/EvictionStrategy.lua",
+  "bytes": 5548
+ },
+ {
+  "ref": 16889,
+  "class": "ModuleScript",
+  "name": "GrowthStrategy",
+  "path": "Model/ObjectPoolingEngine/Shared/Strategies/GrowthStrategy",
+  "file": "Model/ObjectPoolingEngine/Shared/Strategies/GrowthStrategy.lua",
+  "bytes": 5830
+ },
+ {
+  "ref": 16890,
+  "class": "ModuleScript",
+  "name": "WarmUpStrategy",
+  "path": "Model/ObjectPoolingEngine/Shared/Strategies/WarmUpStrategy",
+  "file": "Model/ObjectPoolingEngine/Shared/Strategies/WarmUpStrategy.lua",
+  "bytes": 13070
+ },
+ {
+  "ref": 16892,
+  "class": "ModuleScript",
+  "name": "MetricsCollector",
+  "path": "Model/ObjectPoolingEngine/Shared/Analytics/MetricsCollector",
+  "file": "Model/ObjectPoolingEngine/Shared/Analytics/MetricsCollector.lua",
+  "bytes": 7016
+ },
+ {
+  "ref": 16893,
+  "class": "ModuleScript",
+  "name": "PerformanceMonitor",
+  "path": "Model/ObjectPoolingEngine/Shared/Analytics/PerformanceMonitor",
+  "file": "Model/ObjectPoolingEngine/Shared/Analytics/PerformanceMonitor.lua",
+  "bytes": 8863
+ },
+ {
+  "ref": 16894,
+  "class": "ModuleScript",
+  "name": "PoolAnalytics",
+  "path": "Model/ObjectPoolingEngine/Shared/Analytics/PoolAnalytics",
+  "file": "Model/ObjectPoolingEngine/Shared/Analytics/PoolAnalytics.lua",
+  "bytes": 11656
+ },
+ {
+  "ref": 16896,
+  "class": "ModuleScript",
+  "name": "CircularBuffer",
+  "path": "Model/ObjectPoolingEngine/Shared/Utils/CircularBuffer",
+  "file": "Model/ObjectPoolingEngine/Shared/Utils/CircularBuffer.lua",
+  "bytes": 4613
+ },
+ {
+  "ref": 16897,
+  "class": "ModuleScript",
+  "name": "Constants",
+  "path": "Model/ObjectPoolingEngine/Shared/Utils/Constants",
+  "file": "Model/ObjectPoolingEngine/Shared/Utils/Constants.lua",
+  "bytes": 3602
+ },
+ {
+  "ref": 16898,
+  "class": "ModuleScript",
+  "name": "Logger",
+  "path": "Model/ObjectPoolingEngine/Shared/Utils/Logger",
+  "file": "Model/ObjectPoolingEngine/Shared/Utils/Logger.lua",
+  "bytes": 4686
+ },
+ {
+  "ref": 16899,
+  "class": "ModuleScript",
+  "name": "ObjectValidator",
+  "path": "Model/ObjectPoolingEngine/Shared/Utils/ObjectValidator",
+  "file": "Model/ObjectPoolingEngine/Shared/Utils/ObjectValidator.lua",
+  "bytes": 8750
+ },
+ {
+  "ref": 16900,
+  "class": "ModuleScript",
+  "name": "PriorityQueue",
+  "path": "Model/ObjectPoolingEngine/Shared/Utils/PriorityQueue",
+  "file": "Model/ObjectPoolingEngine/Shared/Utils/PriorityQueue.lua",
+  "bytes": 5647
+ },
+ {
+  "ref": 16901,
+  "class": "ModuleScript",
+  "name": "Signal",
+  "path": "Model/ObjectPoolingEngine/Shared/Utils/Signal",
+  "file": "Model/ObjectPoolingEngine/Shared/Utils/Signal.lua",
+  "bytes": 4734
+ },
+ {
+  "ref": 16902,
+  "class": "ModuleScript",
+  "name": "Timer",
+  "path": "Model/ObjectPoolingEngine/Shared/Utils/Timer",
+  "file": "Model/ObjectPoolingEngine/Shared/Utils/Timer.lua",
+  "bytes": 7258
+ },
+ {
+  "ref": 17256,
+  "class": "ModuleScript",
+  "name": "Icon",
+  "path": "Model/Packages/Icon",
+  "file": "Model/Packages/Icon.lua",
+  "bytes": 37854
+ },
+ {
+  "ref": 17257,
+  "class": "ModuleScript",
+  "name": "Types",
+  "path": "Model/Packages/Icon/Types",
+  "file": "Model/Packages/Icon/Types.lua",
+  "bytes": 12456
+ },
+ {
+  "ref": 17258,
+  "class": "ModuleScript",
+  "name": "VERSION",
+  "path": "Model/Packages/Icon/VERSION",
+  "file": "Model/Packages/Icon/VERSION.lua",
+  "bytes": 1153
+ },
+ {
+  "ref": 17259,
+  "class": "ModuleScript",
+  "name": "Reference",
+  "path": "Model/Packages/Icon/Reference",
+  "file": "Model/Packages/Icon/Reference.lua",
+  "bytes": 1018
+ },
+ {
+  "ref": 17260,
+  "class": "ModuleScript",
+  "name": "Attribute",
+  "path": "Model/Packages/Icon/Attribute",
+  "file": "Model/Packages/Icon/Attribute.lua",
+  "bytes": 1237
+ },
+ {
+  "ref": 17261,
+  "class": "ModuleScript",
+  "name": "Utility",
+  "path": "Model/Packages/Icon/Utility",
+  "file": "Model/Packages/Icon/Utility.lua",
+  "bytes": 16170
+ },
+ {
+  "ref": 17264,
+  "class": "ModuleScript",
+  "name": "Caption",
+  "path": "Model/Packages/Icon/Elements/Caption",
+  "file": "Model/Packages/Icon/Elements/Caption.lua",
+  "bytes": 10665
+ },
+ {
+  "ref": 17265,
+  "class": "ModuleScript",
+  "name": "Container",
+  "path": "Model/Packages/Icon/Elements/Container",
+  "file": "Model/Packages/Icon/Elements/Container.lua",
+  "bytes": 7439
+ },
+ {
+  "ref": 17266,
+  "class": "ModuleScript",
+  "name": "Indicator",
+  "path": "Model/Packages/Icon/Elements/Indicator",
+  "file": "Model/Packages/Icon/Elements/Indicator.lua",
+  "bytes": 3225
+ },
+ {
+  "ref": 17267,
+  "class": "ModuleScript",
+  "name": "Menu",
+  "path": "Model/Packages/Icon/Elements/Menu",
+  "file": "Model/Packages/Icon/Elements/Menu.lua",
+  "bytes": 6070
+ },
+ {
+  "ref": 17268,
+  "class": "ModuleScript",
+  "name": "Notice",
+  "path": "Model/Packages/Icon/Elements/Notice",
+  "file": "Model/Packages/Icon/Elements/Notice.lua",
+  "bytes": 3314
+ },
+ {
+  "ref": 17269,
+  "class": "ModuleScript",
+  "name": "Selection",
+  "path": "Model/Packages/Icon/Elements/Selection",
+  "file": "Model/Packages/Icon/Elements/Selection.lua",
+  "bytes": 1560
+ },
+ {
+  "ref": 17270,
+  "class": "ModuleScript",
+  "name": "Widget",
+  "path": "Model/Packages/Icon/Elements/Widget",
+  "file": "Model/Packages/Icon/Elements/Widget.lua",
+  "bytes": 16371
+ },
+ {
+  "ref": 17271,
+  "class": "ModuleScript",
+  "name": "Dropdown",
+  "path": "Model/Packages/Icon/Elements/Dropdown",
+  "file": "Model/Packages/Icon/Elements/Dropdown.lua",
+  "bytes": 11046
+ },
+ {
+  "ref": 17273,
+  "class": "ModuleScript",
+  "name": "Gamepad",
+  "path": "Model/Packages/Icon/Features/Gamepad",
+  "file": "Model/Packages/Icon/Features/Gamepad.lua",
+  "bytes": 7285
+ },
+ {
+  "ref": 17274,
+  "class": "ModuleScript",
+  "name": "Overflow",
+  "path": "Model/Packages/Icon/Features/Overflow",
+  "file": "Model/Packages/Icon/Features/Overflow.lua",
+  "bytes": 12690
+ },
+ {
+  "ref": 17275,
+  "class": "ModuleScript",
+  "name": "Themes",
+  "path": "Model/Packages/Icon/Features/Themes",
+  "file": "Model/Packages/Icon/Features/Themes.lua",
+  "bytes": 12244
+ },
+ {
+  "ref": 17276,
+  "class": "ModuleScript",
+  "name": "Classic",
+  "path": "Model/Packages/Icon/Features/Themes/Classic",
+  "file": "Model/Packages/Icon/Features/Themes/Classic.lua",
+  "bytes": 1155
+ },
+ {
+  "ref": 17277,
+  "class": "ModuleScript",
+  "name": "Default",
+  "path": "Model/Packages/Icon/Features/Themes/Default",
+  "file": "Model/Packages/Icon/Features/Themes/Default.lua",
+  "bytes": 4031
+ },
+ {
+  "ref": 17279,
+  "class": "ModuleScript",
+  "name": "GoodSignal",
+  "path": "Model/Packages/Icon/Packages/GoodSignal",
+  "file": "Model/Packages/Icon/Packages/GoodSignal.lua",
+  "bytes": 6629
+ },
+ {
+  "ref": 17280,
+  "class": "ModuleScript",
+  "name": "Janitor",
+  "path": "Model/Packages/Icon/Packages/Janitor",
+  "file": "Model/Packages/Icon/Packages/Janitor.lua",
+  "bytes": 8379
+ },
+ {
+  "ref": 17281,
+  "class": "ModuleScript",
+  "name": "HashLib",
+  "path": "Model/Packages/HashLib",
+  "file": "Model/Packages/HashLib.lua",
+  "bytes": 74
+ },
+ {
+  "ref": 17282,
+  "class": "ModuleScript",
+  "name": "ProfileStore",
+  "path": "Model/Packages/ProfileStore",
+  "file": "Model/Packages/ProfileStore.lua",
+  "bytes": 64516
+ },
+ {
+  "ref": 17285,
+  "class": "ModuleScript",
+  "name": "hashlib",
+  "path": "Model/Packages/_Index/boatbomber_hashlib@1.0.0/hashlib",
+  "file": "Model/Packages/_Index/boatbomber_hashlib@1.0.0/hashlib.lua",
+  "bytes": 53254
+ },
+ {
+  "ref": 17286,
+  "class": "ModuleScript",
+  "name": "HashLib.spec",
+  "path": "Model/Packages/_Index/boatbomber_hashlib@1.0.0/hashlib/HashLib.spec",
+  "file": "Model/Packages/_Index/boatbomber_hashlib@1.0.0/hashlib/HashLib.spec.lua",
+  "bytes": 1457
+ },
+ {
+  "ref": 17287,
+  "class": "ModuleScript",
+  "name": "Base64",
+  "path": "Model/Packages/_Index/boatbomber_hashlib@1.0.0/hashlib/Base64",
+  "file": "Model/Packages/_Index/boatbomber_hashlib@1.0.0/hashlib/Base64.lua",
+  "bytes": 2875
+ },
+ {
+  "ref": 17319,
+  "class": "ModuleScript",
+  "name": "Animations",
+  "path": "Model/Shared/Animations",
+  "file": "Model/Shared/Animations.lua",
+  "bytes": 4278
+ },
+ {
+  "ref": 17320,
+  "class": "ModuleScript",
+  "name": "Poses",
+  "path": "Model/Shared/Poses",
+  "file": "Model/Shared/Poses.lua",
+  "bytes": 3360
+ },
+ {
+  "ref": 17922,
+  "class": "ModuleScript",
+  "name": "Icon",
+  "path": "Model/TopbarPlus/Icon",
+  "file": "Model/TopbarPlus/Icon.lua",
+  "bytes": 37854
+ },
+ {
+  "ref": 17923,
+  "class": "ModuleScript",
+  "name": "Types",
+  "path": "Model/TopbarPlus/Icon/Types",
+  "file": "Model/TopbarPlus/Icon/Types.lua",
+  "bytes": 12456
+ },
+ {
+  "ref": 17924,
+  "class": "ModuleScript",
+  "name": "VERSION",
+  "path": "Model/TopbarPlus/Icon/VERSION",
+  "file": "Model/TopbarPlus/Icon/VERSION.lua",
+  "bytes": 1153
+ },
+ {
+  "ref": 17925,
+  "class": "ModuleScript",
+  "name": "Reference",
+  "path": "Model/TopbarPlus/Icon/Reference",
+  "file": "Model/TopbarPlus/Icon/Reference.lua",
+  "bytes": 1018
+ },
+ {
+  "ref": 17926,
+  "class": "ModuleScript",
+  "name": "Attribute",
+  "path": "Model/TopbarPlus/Icon/Attribute",
+  "file": "Model/TopbarPlus/Icon/Attribute.lua",
+  "bytes": 1237
+ },
+ {
+  "ref": 17927,
+  "class": "ModuleScript",
+  "name": "Utility",
+  "path": "Model/TopbarPlus/Icon/Utility",
+  "file": "Model/TopbarPlus/Icon/Utility.lua",
+  "bytes": 16170
+ },
+ {
+  "ref": 17930,
+  "class": "ModuleScript",
+  "name": "Caption",
+  "path": "Model/TopbarPlus/Icon/Elements/Caption",
+  "file": "Model/TopbarPlus/Icon/Elements/Caption.lua",
+  "bytes": 10665
+ },
+ {
+  "ref": 17931,
+  "class": "ModuleScript",
+  "name": "Container",
+  "path": "Model/TopbarPlus/Icon/Elements/Container",
+  "file": "Model/TopbarPlus/Icon/Elements/Container.lua",
+  "bytes": 7439
+ },
+ {
+  "ref": 17932,
+  "class": "ModuleScript",
+  "name": "Indicator",
+  "path": "Model/TopbarPlus/Icon/Elements/Indicator",
+  "file": "Model/TopbarPlus/Icon/Elements/Indicator.lua",
+  "bytes": 3225
+ },
+ {
+  "ref": 17933,
+  "class": "ModuleScript",
+  "name": "Menu",
+  "path": "Model/TopbarPlus/Icon/Elements/Menu",
+  "file": "Model/TopbarPlus/Icon/Elements/Menu.lua",
+  "bytes": 6070
+ },
+ {
+  "ref": 17934,
+  "class": "ModuleScript",
+  "name": "Notice",
+  "path": "Model/TopbarPlus/Icon/Elements/Notice",
+  "file": "Model/TopbarPlus/Icon/Elements/Notice.lua",
+  "bytes": 3314
+ },
+ {
+  "ref": 17935,
+  "class": "ModuleScript",
+  "name": "Selection",
+  "path": "Model/TopbarPlus/Icon/Elements/Selection",
+  "file": "Model/TopbarPlus/Icon/Elements/Selection.lua",
+  "bytes": 1560
+ },
+ {
+  "ref": 17936,
+  "class": "ModuleScript",
+  "name": "Widget",
+  "path": "Model/TopbarPlus/Icon/Elements/Widget",
+  "file": "Model/TopbarPlus/Icon/Elements/Widget.lua",
+  "bytes": 16371
+ },
+ {
+  "ref": 17937,
+  "class": "ModuleScript",
+  "name": "Dropdown",
+  "path": "Model/TopbarPlus/Icon/Elements/Dropdown",
+  "file": "Model/TopbarPlus/Icon/Elements/Dropdown.lua",
+  "bytes": 11046
+ },
+ {
+  "ref": 17939,
+  "class": "ModuleScript",
+  "name": "Gamepad",
+  "path": "Model/TopbarPlus/Icon/Features/Gamepad",
+  "file": "Model/TopbarPlus/Icon/Features/Gamepad.lua",
+  "bytes": 7285
+ },
+ {
+  "ref": 17940,
+  "class": "ModuleScript",
+  "name": "Overflow",
+  "path": "Model/TopbarPlus/Icon/Features/Overflow",
+  "file": "Model/TopbarPlus/Icon/Features/Overflow.lua",
+  "bytes": 12690
+ },
+ {
+  "ref": 17941,
+  "class": "ModuleScript",
+  "name": "Themes",
+  "path": "Model/TopbarPlus/Icon/Features/Themes",
+  "file": "Model/TopbarPlus/Icon/Features/Themes.lua",
+  "bytes": 12244
+ },
+ {
+  "ref": 17942,
+  "class": "ModuleScript",
+  "name": "Classic",
+  "path": "Model/TopbarPlus/Icon/Features/Themes/Classic",
+  "file": "Model/TopbarPlus/Icon/Features/Themes/Classic.lua",
+  "bytes": 1155
+ },
+ {
+  "ref": 17943,
+  "class": "ModuleScript",
+  "name": "Default",
+  "path": "Model/TopbarPlus/Icon/Features/Themes/Default",
+  "file": "Model/TopbarPlus/Icon/Features/Themes/Default.lua",
+  "bytes": 4031
+ },
+ {
+  "ref": 17945,
+  "class": "ModuleScript",
+  "name": "GoodSignal",
+  "path": "Model/TopbarPlus/Icon/Packages/GoodSignal",
+  "file": "Model/TopbarPlus/Icon/Packages/GoodSignal.lua",
+  "bytes": 6629
+ },
+ {
+  "ref": 17946,
+  "class": "ModuleScript",
+  "name": "Janitor",
+  "path": "Model/TopbarPlus/Icon/Packages/Janitor",
+  "file": "Model/TopbarPlus/Icon/Packages/Janitor.lua",
+  "bytes": 8379
+ },
+ {
+  "ref": 17947,
+  "class": "Script",
+  "name": "READ_ME",
+  "path": "Model/TopbarPlus/READ_ME",
+  "file": "Model/TopbarPlus/READ_ME.server.lua",
+  "bytes": 1051
+ },
+ {
+  "ref": 18962,
+  "class": "ModuleScript",
+  "name": "Icon",
+  "path": "Model/uxpRS/AdminPanel/Icon",
+  "file": "Model/uxpRS/AdminPanel/Icon.lua",
+  "bytes": 32984
+ },
+ {
+  "ref": 18963,
+  "class": "ModuleScript",
+  "name": "Attribute",
+  "path": "Model/uxpRS/AdminPanel/Icon/Attribute",
+  "file": "Model/uxpRS/AdminPanel/Icon/Attribute.lua",
+  "bytes": 564
+ },
+ {
+  "ref": 18964,
+  "class": "ModuleScript",
+  "name": "Reference",
+  "path": "Model/uxpRS/AdminPanel/Icon/Reference",
+  "file": "Model/uxpRS/AdminPanel/Icon/Reference.lua",
+  "bytes": 1047
+ },
+ {
+  "ref": 18965,
+  "class": "ModuleScript",
+  "name": "VERSION",
+  "path": "Model/uxpRS/AdminPanel/Icon/VERSION",
+  "file": "Model/uxpRS/AdminPanel/Icon/VERSION.lua",
+  "bytes": 15
+ },
+ {
+  "ref": 18966,
+  "class": "ModuleScript",
+  "name": "Utility",
+  "path": "Model/uxpRS/AdminPanel/Icon/Utility",
+  "file": "Model/uxpRS/AdminPanel/Icon/Utility.lua",
+  "bytes": 15603
+ },
+ {
+  "ref": 18969,
+  "class": "ModuleScript",
+  "name": "Caption",
+  "path": "Model/uxpRS/AdminPanel/Icon/Elements/Caption",
+  "file": "Model/uxpRS/AdminPanel/Icon/Elements/Caption.lua",
+  "bytes": 10831
+ },
+ {
+  "ref": 18970,
+  "class": "ModuleScript",
+  "name": "Container",
+  "path": "Model/uxpRS/AdminPanel/Icon/Elements/Container",
+  "file": "Model/uxpRS/AdminPanel/Icon/Elements/Container.lua",
+  "bytes": 4568
+ },
+ {
+  "ref": 18971,
+  "class": "ModuleScript",
+  "name": "Dropdown",
+  "path": "Model/uxpRS/AdminPanel/Icon/Elements/Dropdown",
+  "file": "Model/uxpRS/AdminPanel/Icon/Elements/Dropdown.lua",
+  "bytes": 5989
+ },
+ {
+  "ref": 18972,
+  "class": "ModuleScript",
+  "name": "Indicator",
+  "path": "Model/uxpRS/AdminPanel/Icon/Elements/Indicator",
+  "file": "Model/uxpRS/AdminPanel/Icon/Elements/Indicator.lua",
+  "bytes": 3315
+ },
+ {
+  "ref": 18973,
+  "class": "ModuleScript",
+  "name": "Menu",
+  "path": "Model/uxpRS/AdminPanel/Icon/Elements/Menu",
+  "file": "Model/uxpRS/AdminPanel/Icon/Elements/Menu.lua",
+  "bytes": 6212
+ },
+ {
+  "ref": 18974,
+  "class": "ModuleScript",
+  "name": "Selection",
+  "path": "Model/uxpRS/AdminPanel/Icon/Elements/Selection",
+  "file": "Model/uxpRS/AdminPanel/Icon/Elements/Selection.lua",
+  "bytes": 1608
+ },
+ {
+  "ref": 18975,
+  "class": "ModuleScript",
+  "name": "Widget",
+  "path": "Model/uxpRS/AdminPanel/Icon/Elements/Widget",
+  "file": "Model/uxpRS/AdminPanel/Icon/Elements/Widget.lua",
+  "bytes": 15385
+ },
+ {
+  "ref": 18976,
+  "class": "ModuleScript",
+  "name": "Notice",
+  "path": "Model/uxpRS/AdminPanel/Icon/Elements/Notice",
+  "file": "Model/uxpRS/AdminPanel/Icon/Elements/Notice.lua",
+  "bytes": 3481
+ },
+ {
+  "ref": 18978,
+  "class": "ModuleScript",
+  "name": "Gamepad",
+  "path": "Model/uxpRS/AdminPanel/Icon/Features/Gamepad",
+  "file": "Model/uxpRS/AdminPanel/Icon/Features/Gamepad.lua",
+  "bytes": 7014
+ },
+ {
+  "ref": 18979,
+  "class": "ModuleScript",
+  "name": "Overflow",
+  "path": "Model/uxpRS/AdminPanel/Icon/Features/Overflow",
+  "file": "Model/uxpRS/AdminPanel/Icon/Features/Overflow.lua",
+  "bytes": 11787
+ },
+ {
+  "ref": 18980,
+  "class": "ModuleScript",
+  "name": "Themes",
+  "path": "Model/uxpRS/AdminPanel/Icon/Features/Themes",
+  "file": "Model/uxpRS/AdminPanel/Icon/Features/Themes.lua",
+  "bytes": 12232
+ },
+ {
+  "ref": 18981,
+  "class": "ModuleScript",
+  "name": "Classic",
+  "path": "Model/uxpRS/AdminPanel/Icon/Features/Themes/Classic",
+  "file": "Model/uxpRS/AdminPanel/Icon/Features/Themes/Classic.lua",
+  "bytes": 1155
+ },
+ {
+  "ref": 18982,
+  "class": "ModuleScript",
+  "name": "Default",
+  "path": "Model/uxpRS/AdminPanel/Icon/Features/Themes/Default",
+  "file": "Model/uxpRS/AdminPanel/Icon/Features/Themes/Default.lua",
+  "bytes": 3918
+ },
+ {
+  "ref": 18984,
+  "class": "ModuleScript",
+  "name": "GoodSignal",
+  "path": "Model/uxpRS/AdminPanel/Icon/Packages/GoodSignal",
+  "file": "Model/uxpRS/AdminPanel/Icon/Packages/GoodSignal.lua",
+  "bytes": 6810
+ },
+ {
+  "ref": 18985,
+  "class": "ModuleScript",
+  "name": "Janitor",
+  "path": "Model/uxpRS/AdminPanel/Icon/Packages/Janitor",
+  "file": "Model/uxpRS/AdminPanel/Icon/Packages/Janitor.lua",
+  "bytes": 12323
+ },
+ {
+  "ref": 18986,
+  "class": "ModuleScript",
+  "name": "PanelSettings",
+  "path": "Model/uxpRS/AdminPanel/PanelSettings",
+  "file": "Model/uxpRS/AdminPanel/PanelSettings.lua",
+  "bytes": 43424
+ },
+ {
+  "ref": 18987,
+  "class": "ModuleScript",
+  "name": "spr",
+  "path": "Model/uxpRS/AdminPanel/spr",
+  "file": "Model/uxpRS/AdminPanel/spr.lua",
+  "bytes": 19173
+ },
+ {
+  "ref": 18988,
+  "class": "ModuleScript",
+  "name": "LocalEventModule",
+  "path": "Model/uxpRS/AdminPanel/LocalEventModule",
+  "file": "Model/uxpRS/AdminPanel/LocalEventModule.lua",
+  "bytes": 40189
+ },
+ {
+  "ref": 18989,
+  "class": "ModuleScript",
+  "name": "UtilModule",
+  "path": "Model/uxpRS/AdminPanel/UtilModule",
+  "file": "Model/uxpRS/AdminPanel/UtilModule.lua",
+  "bytes": 1669
+ },
+ {
+  "ref": 19090,
+  "class": "LocalScript",
+  "name": "Idle",
+  "path": "Model/GlowStick/Idle",
+  "file": "Model/GlowStick/Idle.client.lua",
+  "bytes": 704
+ },
+ {
+  "ref": 19091,
+  "class": "LocalScript",
+  "name": "AnimScript",
+  "path": "Model/GlowStick/AnimScript",
+  "file": "Model/GlowStick/AnimScript.client.lua",
+  "bytes": 861
+ },
+ {
+  "ref": 19092,
+  "class": "Script",
+  "name": "DualWeld",
+  "path": "Model/GlowStick/DualWeld",
+  "file": "Model/GlowStick/DualWeld.server.lua",
+  "bytes": 939
+ },
+ {
+  "ref": 19096,
+  "class": "LocalScript",
+  "name": "Manager",
+  "path": "Model/GlowStick/ToolColors/Manager",
+  "file": "Model/GlowStick/ToolColors/Manager.client.lua",
+  "bytes": 4308
+ },
+ {
+  "ref": 19097,
+  "class": "Script",
+  "name": "Server",
+  "path": "Model/GlowStick/ToolColors/Server",
+  "file": "Model/GlowStick/ToolColors/Server.server.lua",
+  "bytes": 423
+ },
+ {
+  "ref": 19115,
+  "class": "Script",
+  "name": "VFXTrigger",
+  "path": "Model/GlowStick/Handle/VFXTrigger",
+  "file": "Model/GlowStick/Handle/VFXTrigger.server.lua",
+  "bytes": 512
+ },
+ {
+  "ref": 19155,
+  "class": "ModuleScript",
+  "name": "AssetManager",
+  "path": "Model/AssetManager",
+  "file": "Model/AssetManager.lua",
+  "bytes": 7823
+ },
+ {
+  "ref": 19164,
+  "class": "LocalScript",
+  "name": "Hover",
+  "path": "Model/AssetManager/Template/PurchaseButton/Hover",
+  "file": "Model/AssetManager/Template/PurchaseButton/Hover.client.lua",
+  "bytes": 1680
+ },
+ {
+  "ref": 19165,
+  "class": "ModuleScript",
+  "name": "AuraData",
+  "path": "Model/AuraData",
+  "file": "Model/AuraData.lua",
+  "bytes": 25855
+ },
+ {
+  "ref": 19168,
+  "class": "ModuleScript",
+  "name": "CarryBlueprints",
+  "path": "Model/CarryBlueprints",
+  "file": "Model/CarryBlueprints.lua",
+  "bytes": 1834
+ },
+ {
+  "ref": 19170,
+  "class": "ModuleScript",
+  "name": "ClickerModule",
+  "path": "Model/ClickerModule",
+  "file": "Model/ClickerModule.lua",
+  "bytes": 1328
+ },
+ {
+  "ref": 19171,
+  "class": "LocalScript",
+  "name": "ROBLOX_InteractiveClicker",
+  "path": "Model/ClickerModule/ROBLOX_InteractiveClicker",
+  "file": "Model/ClickerModule/ROBLOX_InteractiveClicker.client.lua",
+  "bytes": 1229
+ },
+ {
+  "ref": 19182,
+  "class": "ModuleScript",
+  "name": "GameSettings",
+  "path": "Model/GameSettings",
+  "file": "Model/GameSettings.lua",
+  "bytes": 83
+ },
+ {
+  "ref": 19184,
+  "class": "ModuleScript",
+  "name": "GlobalChatSettings",
+  "path": "Model/GlobalChatSettings",
+  "file": "Model/GlobalChatSettings.lua",
+  "bytes": 1379
+ },
+ {
+  "ref": 19185,
+  "class": "Script",
+  "name": "DO NOT EDIT ME",
+  "path": "Model/GlobalChatSettings/DO NOT EDIT ME",
+  "file": "Model/GlobalChatSettings/DO NOT EDIT ME.server.lua",
+  "bytes": 532
+ },
+ {
+  "ref": 19186,
+  "class": "ModuleScript",
+  "name": "Icon",
+  "path": "Model/Icon",
+  "file": "Model/Icon.lua",
+  "bytes": 37854
+ },
+ {
+  "ref": 19187,
+  "class": "ModuleScript",
+  "name": "Types",
+  "path": "Model/Icon/Types",
+  "file": "Model/Icon/Types.lua",
+  "bytes": 12456
+ },
+ {
+  "ref": 19188,
+  "class": "ModuleScript",
+  "name": "VERSION",
+  "path": "Model/Icon/VERSION",
+  "file": "Model/Icon/VERSION.lua",
+  "bytes": 1153
+ },
+ {
+  "ref": 19189,
+  "class": "ModuleScript",
+  "name": "Reference",
+  "path": "Model/Icon/Reference",
+  "file": "Model/Icon/Reference.lua",
+  "bytes": 1018
+ },
+ {
+  "ref": 19190,
+  "class": "ModuleScript",
+  "name": "Attribute",
+  "path": "Model/Icon/Attribute",
+  "file": "Model/Icon/Attribute.lua",
+  "bytes": 1237
+ },
+ {
+  "ref": 19191,
+  "class": "ModuleScript",
+  "name": "Utility",
+  "path": "Model/Icon/Utility",
+  "file": "Model/Icon/Utility.lua",
+  "bytes": 16170
+ },
+ {
+  "ref": 19194,
+  "class": "ModuleScript",
+  "name": "Caption",
+  "path": "Model/Icon/Elements/Caption",
+  "file": "Model/Icon/Elements/Caption.lua",
+  "bytes": 10665
+ },
+ {
+  "ref": 19195,
+  "class": "ModuleScript",
+  "name": "Container",
+  "path": "Model/Icon/Elements/Container",
+  "file": "Model/Icon/Elements/Container.lua",
+  "bytes": 7439
+ },
+ {
+  "ref": 19196,
+  "class": "ModuleScript",
+  "name": "Indicator",
+  "path": "Model/Icon/Elements/Indicator",
+  "file": "Model/Icon/Elements/Indicator.lua",
+  "bytes": 3225
+ },
+ {
+  "ref": 19197,
+  "class": "ModuleScript",
+  "name": "Menu",
+  "path": "Model/Icon/Elements/Menu",
+  "file": "Model/Icon/Elements/Menu.lua",
+  "bytes": 6070
+ },
+ {
+  "ref": 19198,
+  "class": "ModuleScript",
+  "name": "Notice",
+  "path": "Model/Icon/Elements/Notice",
+  "file": "Model/Icon/Elements/Notice.lua",
+  "bytes": 3314
+ },
+ {
+  "ref": 19199,
+  "class": "ModuleScript",
+  "name": "Selection",
+  "path": "Model/Icon/Elements/Selection",
+  "file": "Model/Icon/Elements/Selection.lua",
+  "bytes": 1560
+ },
+ {
+  "ref": 19200,
+  "class": "ModuleScript",
+  "name": "Widget",
+  "path": "Model/Icon/Elements/Widget",
+  "file": "Model/Icon/Elements/Widget.lua",
+  "bytes": 16371
+ },
+ {
+  "ref": 19201,
+  "class": "ModuleScript",
+  "name": "Dropdown",
+  "path": "Model/Icon/Elements/Dropdown",
+  "file": "Model/Icon/Elements/Dropdown.lua",
+  "bytes": 11046
+ },
+ {
+  "ref": 19203,
+  "class": "ModuleScript",
+  "name": "Gamepad",
+  "path": "Model/Icon/Features/Gamepad",
+  "file": "Model/Icon/Features/Gamepad.lua",
+  "bytes": 7285
+ },
+ {
+  "ref": 19204,
+  "class": "ModuleScript",
+  "name": "Overflow",
+  "path": "Model/Icon/Features/Overflow",
+  "file": "Model/Icon/Features/Overflow.lua",
+  "bytes": 12690
+ },
+ {
+  "ref": 19205,
+  "class": "ModuleScript",
+  "name": "Themes",
+  "path": "Model/Icon/Features/Themes",
+  "file": "Model/Icon/Features/Themes.lua",
+  "bytes": 12244
+ },
+ {
+  "ref": 19206,
+  "class": "ModuleScript",
+  "name": "Classic",
+  "path": "Model/Icon/Features/Themes/Classic",
+  "file": "Model/Icon/Features/Themes/Classic.lua",
+  "bytes": 1155
+ },
+ {
+  "ref": 19207,
+  "class": "ModuleScript",
+  "name": "Default",
+  "path": "Model/Icon/Features/Themes/Default",
+  "file": "Model/Icon/Features/Themes/Default.lua",
+  "bytes": 4031
+ },
+ {
+  "ref": 19209,
+  "class": "ModuleScript",
+  "name": "GoodSignal",
+  "path": "Model/Icon/Packages/GoodSignal",
+  "file": "Model/Icon/Packages/GoodSignal.lua",
+  "bytes": 6629
+ },
+ {
+  "ref": 19210,
+  "class": "ModuleScript",
+  "name": "Janitor",
+  "path": "Model/Icon/Packages/Janitor",
+  "file": "Model/Icon/Packages/Janitor.lua",
+  "bytes": 8379
+ },
+ {
+  "ref": 19214,
+  "class": "ModuleScript",
+  "name": "NameTagConfig",
+  "path": "Model/NameTagConfig",
+  "file": "Model/NameTagConfig.lua",
+  "bytes": 7945
+ },
+ {
+  "ref": 19218,
+  "class": "ModuleScript",
+  "name": "PitchConfig",
+  "path": "Model/PitchConfig",
+  "file": "Model/PitchConfig.lua",
+  "bytes": 2404
+ },
+ {
+  "ref": 19222,
+  "class": "ModuleScript",
+  "name": "Remotes",
+  "path": "Model/Remotes",
+  "file": "Model/Remotes.lua",
+  "bytes": 1509
+ },
+ {
+  "ref": 19269,
+  "class": "ModuleScript",
+  "name": "RunConfig",
+  "path": "Model/RunConfig",
+  "file": "Model/RunConfig.lua",
+  "bytes": 1171
+ },
+ {
+  "ref": 19273,
+  "class": "ModuleScript",
+  "name": "UIEffects",
+  "path": "Model/UIEffects",
+  "file": "Model/UIEffects.lua",
+  "bytes": 3527
+ },
+ {
+  "ref": 19308,
+  "class": "ModuleScript",
+  "name": "ItemButton",
+  "path": "Model/ItemButton",
+  "file": "Model/ItemButton.lua",
+  "bytes": 1815
+ },
+ {
+  "ref": 19310,
+  "class": "LocalScript",
+  "name": "CoreScript",
+  "path": "Model/AdminPanelGui/CoreScript",
+  "file": "Model/AdminPanelGui/CoreScript.client.lua",
+  "bytes": 48344
+ },
+ {
+  "ref": 19349,
+  "class": "LocalScript",
+  "name": "LocalScript",
+  "path": "Model/AdminPanelGui/SkyBoxFrame/ScrollingFrame/UIGridLayout/Template/TextButton/LocalScript",
+  "file": "Model/AdminPanelGui/SkyBoxFrame/ScrollingFrame/UIGridLayout/Template/TextButton/LocalScript.client.lua",
+  "bytes": 325
+ },
+ {
+  "ref": 19377,
+  "class": "LocalScript",
+  "name": "LocalScript",
+  "path": "Model/AdminPanelGui/InventroyFrame/ScrollingFrame/UIGridLayout/Template/TextButton/LocalScript",
+  "file": "Model/AdminPanelGui/InventroyFrame/ScrollingFrame/UIGridLayout/Template/TextButton/LocalScript.client.lua",
+  "bytes": 380
+ },
+ {
+  "ref": 19397,
+  "class": "LocalScript",
+  "name": "LocalScript",
+  "path": "Model/AdminPanelGui/HatsFrame/ScrollingFrame/UIGridLayout/Template/TextButton/LocalScript",
+  "file": "Model/AdminPanelGui/HatsFrame/ScrollingFrame/UIGridLayout/Template/TextButton/LocalScript.client.lua",
+  "bytes": 379
+ },
+ {
+  "ref": 19408,
+  "class": "LocalScript",
+  "name": "LocalScript",
+  "path": "Model/AdminPanelGui/HatsFrame/ServerScrollingFrame/UIGridLayout/Template/TextButton/LocalScript",
+  "file": "Model/AdminPanelGui/HatsFrame/ServerScrollingFrame/UIGridLayout/Template/TextButton/LocalScript.client.lua",
+  "bytes": 376
+ },
+ {
+  "ref": 19425,
+  "class": "LocalScript",
+  "name": "LocalScript",
+  "path": "Model/AdminPanelGui/DataFrame/ScrollingFrame/UIGridLayout/HeadTemplate/TextButton/LocalScript",
+  "file": "Model/AdminPanelGui/DataFrame/ScrollingFrame/UIGridLayout/HeadTemplate/TextButton/LocalScript.client.lua",
+  "bytes": 379
+ },
+ {
+  "ref": 19435,
+  "class": "LocalScript",
+  "name": "LocalScript",
+  "path": "Model/AdminPanelGui/DataFrame/ScrollingFrame/UIGridLayout/Template/CallFrame/CallButton/LocalScript",
+  "file": "Model/AdminPanelGui/DataFrame/ScrollingFrame/UIGridLayout/Template/CallFrame/CallButton/LocalScript.client.lua",
+  "bytes": 1693
+ },
+ {
+  "ref": 19446,
+  "class": "LocalScript",
+  "name": "LocalScript",
+  "path": "Model/AdminPanelGui/DataFrame/ScrollingFrame/UIGridLayout/Template/ButtonFrame/CallButton/LocalScript",
+  "file": "Model/AdminPanelGui/DataFrame/ScrollingFrame/UIGridLayout/Template/ButtonFrame/CallButton/LocalScript.client.lua",
+  "bytes": 312
+ },
+ {
+  "ref": 19538,
+  "class": "LocalScript",
+  "name": "LocalScript",
+  "path": "Model/AdminPanelGui/ToolsFrame/ScrollingFrame/UIGridLayout/Template/TextButton/LocalScript",
+  "file": "Model/AdminPanelGui/ToolsFrame/ScrollingFrame/UIGridLayout/Template/TextButton/LocalScript.client.lua",
+  "bytes": 380
+ },
+ {
+  "ref": 19549,
+  "class": "LocalScript",
+  "name": "LocalScript",
+  "path": "Model/AdminPanelGui/ToolsFrame/ServerScrollingFrame/UIGridLayout/Template/TextButton/LocalScript",
+  "file": "Model/AdminPanelGui/ToolsFrame/ServerScrollingFrame/UIGridLayout/Template/TextButton/LocalScript.client.lua",
+  "bytes": 377
+ },
+ {
+  "ref": 19614,
+  "class": "LocalScript",
+  "name": "LocalScript",
+  "path": "Model/AdminPanelGui/VoteFrameTemplate/Nav/CloseButton/LocalScript",
+  "file": "Model/AdminPanelGui/VoteFrameTemplate/Nav/CloseButton/LocalScript.client.lua",
+  "bytes": 249
+ },
+ {
+  "ref": 19621,
+  "class": "LocalScript",
+  "name": "LocalScript",
+  "path": "Model/AdminPanelGui/VoteFrameTemplate/ScrollingFrame/UIListLayout/Template/LocalScript",
+  "file": "Model/AdminPanelGui/VoteFrameTemplate/ScrollingFrame/UIListLayout/Template/LocalScript.client.lua",
+  "bytes": 404
+ },
+ {
+  "ref": 19704,
+  "class": "LocalScript",
+  "name": "LocalScript",
+  "path": "Model/AdminPanelGui/GlobalFrame/MainFrame/PlayersPage/ListFrame/ScrollingFrame/UIGridLayout/Template/ButtonFrame/TextButton/LocalScript",
+  "file": "Model/AdminPanelGui/GlobalFrame/MainFrame/PlayersPage/ListFrame/ScrollingFrame/UIGridLayout/Template/ButtonFrame/TextButton/LocalScript.client.lua",
+  "bytes": 1895
+ },
+ {
+  "ref": 19739,
+  "class": "LocalScript",
+  "name": "CommandScript",
+  "path": "Model/AdminPanelGui/GlobalFrame/MainFrame/PlayerEditPage/ListFrame/ScrollingFrame/UIGridLayout/Template/ButtonFrame/TextButton/CommandScript",
+  "file": "Model/AdminPanelGui/GlobalFrame/MainFrame/PlayerEditPage/ListFrame/ScrollingFrame/UIGridLayout/Template/ButtonFrame/TextButton/CommandScript.client.lua",
+  "bytes": 792
+ },
+ {
+  "ref": 19780,
+  "class": "LocalScript",
+  "name": "LocalScript",
+  "path": "Model/AdminPanelGui/GlobalFrame/MainFrame/ServerPage/ListFrame/ScrollingFrame/UIGridLayout/Template/ButtonFrame/TextButton/LocalScript",
+  "file": "Model/AdminPanelGui/GlobalFrame/MainFrame/ServerPage/ListFrame/ScrollingFrame/UIGridLayout/Template/ButtonFrame/TextButton/LocalScript.client.lua",
+  "bytes": 329
+ },
+ {
+  "ref": 19858,
+  "class": "LocalScript",
+  "name": "LocalScript",
+  "path": "Model/AdminPanelGui/GlobalFrame/MainFrame/GServersPage/ListFrame/ScrollingFrame/UIGridLayout/Template/ButtonFrame/TextButton/LocalScript",
+  "file": "Model/AdminPanelGui/GlobalFrame/MainFrame/GServersPage/ListFrame/ScrollingFrame/UIGridLayout/Template/ButtonFrame/TextButton/LocalScript.client.lua",
+  "bytes": 329
+ },
+ {
+  "ref": 19917,
+  "class": "LocalScript",
+  "name": "LocalScript",
+  "path": "Model/AdminPanelGui/GlobalFrame/MainFrame/PunishmentPage/ListFrame/ScrollingFrame/UIGridLayout/Template/ButtonFrame/TextButton/LocalScript",
+  "file": "Model/AdminPanelGui/GlobalFrame/MainFrame/PunishmentPage/ListFrame/ScrollingFrame/UIGridLayout/Template/ButtonFrame/TextButton/LocalScript.client.lua",
+  "bytes": 1874
+ },
+ {
+  "ref": 20028,
+  "class": "LocalScript",
+  "name": "AnimationsHandler",
+  "path": "Model/AnimationsUI_Final/AnimationsHandler",
+  "file": "Model/AnimationsUI_Final/AnimationsHandler.client.lua",
+  "bytes": 12637
+ },
+ {
+  "ref": 20067,
+  "class": "LocalScript",
+  "name": "AuraShopLocalScript",
+  "path": "Model/AuraUI/AuraShopLocalScript",
+  "file": "Model/AuraUI/AuraShopLocalScript.client.lua",
+  "bytes": 22325
+ },
+ {
+  "ref": 20444,
+  "class": "LocalScript",
+  "name": "LocalScript",
+  "path": "Model/Farm/LocalScript",
+  "file": "Model/Farm/LocalScript.client.lua",
+  "bytes": 903
+ },
+ {
+  "ref": 20445,
+  "class": "LocalScript",
+  "name": "OpenGuiHandler",
+  "path": "Model/Farm/OpenGuiHandler",
+  "file": "Model/Farm/OpenGuiHandler.client.lua",
+  "bytes": 400
+ },
+ {
+  "ref": 20449,
+  "class": "LocalScript",
+  "name": "LocalScript",
+  "path": "Model/Farm/Frame/GP1/LocalScript",
+  "file": "Model/Farm/Frame/GP1/LocalScript.client.lua",
+  "bytes": 299
+ },
+ {
+  "ref": 20450,
+  "class": "LocalScript",
+  "name": "Sound",
+  "path": "Model/Farm/Frame/GP1/Sound",
+  "file": "Model/Farm/Frame/GP1/Sound.client.lua",
+  "bytes": 77
+ },
+ {
+  "ref": 20460,
+  "class": "LocalScript",
+  "name": "LocalScript",
+  "path": "Model/Farm/Frame/GP2/LocalScript",
+  "file": "Model/Farm/Frame/GP2/LocalScript.client.lua",
+  "bytes": 299
+ },
+ {
+  "ref": 20461,
+  "class": "LocalScript",
+  "name": "Sound",
+  "path": "Model/Farm/Frame/GP2/Sound",
+  "file": "Model/Farm/Frame/GP2/Sound.client.lua",
+  "bytes": 77
+ },
+ {
+  "ref": 20471,
+  "class": "LocalScript",
+  "name": "LocalScript",
+  "path": "Model/Farm/Frame/GP3/LocalScript",
+  "file": "Model/Farm/Frame/GP3/LocalScript.client.lua",
+  "bytes": 298
+ },
+ {
+  "ref": 20472,
+  "class": "LocalScript",
+  "name": "Sound",
+  "path": "Model/Farm/Frame/GP3/Sound",
+  "file": "Model/Farm/Frame/GP3/Sound.client.lua",
+  "bytes": 77
+ },
+ {
+  "ref": 20482,
+  "class": "LocalScript",
+  "name": "LocalScript",
+  "path": "Model/Farm/Frame/GP4/LocalScript",
+  "file": "Model/Farm/Frame/GP4/LocalScript.client.lua",
+  "bytes": 299
+ },
+ {
+  "ref": 20483,
+  "class": "LocalScript",
+  "name": "Sound",
+  "path": "Model/Farm/Frame/GP4/Sound",
+  "file": "Model/Farm/Frame/GP4/Sound.client.lua",
+  "bytes": 77
+ },
+ {
+  "ref": 20493,
+  "class": "LocalScript",
+  "name": "LocalScript",
+  "path": "Model/Farm/Frame/GP5/LocalScript",
+  "file": "Model/Farm/Frame/GP5/LocalScript.client.lua",
+  "bytes": 299
+ },
+ {
+  "ref": 20494,
+  "class": "LocalScript",
+  "name": "Sound",
+  "path": "Model/Farm/Frame/GP5/Sound",
+  "file": "Model/Farm/Frame/GP5/Sound.client.lua",
+  "bytes": 77
+ },
+ {
+  "ref": 20504,
+  "class": "LocalScript",
+  "name": "LocalScript",
+  "path": "Model/Farm/Frame/GP6/LocalScript",
+  "file": "Model/Farm/Frame/GP6/LocalScript.client.lua",
+  "bytes": 293
+ },
+ {
+  "ref": 20505,
+  "class": "LocalScript",
+  "name": "Sound",
+  "path": "Model/Farm/Frame/GP6/Sound",
+  "file": "Model/Farm/Frame/GP6/Sound.client.lua",
+  "bytes": 77
+ },
+ {
+  "ref": 20515,
+  "class": "LocalScript",
+  "name": "LocalScript",
+  "path": "Model/Farm/Frame/Xbutton/LocalScript",
+  "file": "Model/Farm/Frame/Xbutton/LocalScript.client.lua",
+  "bytes": 94
+ },
+ {
+  "ref": 20516,
+  "class": "LocalScript",
+  "name": "Sound",
+  "path": "Model/Farm/Frame/Xbutton/Sound",
+  "file": "Model/Farm/Frame/Xbutton/Sound.client.lua",
+  "bytes": 77
+ },
+ {
+  "ref": 20604,
+  "class": "LocalScript",
+  "name": "FloatingActionBarClient",
+  "path": "Model/FloatingActionBar/FloatingActionBarClient",
+  "file": "Model/FloatingActionBar/FloatingActionBarClient.client.lua",
+  "bytes": 9843
+ },
+ {
+  "ref": 20620,
+  "class": "LocalScript",
+  "name": "LocalScript",
+  "path": "Model/JualGui/LocalScript",
+  "file": "Model/JualGui/LocalScript.client.lua",
+  "bytes": 1217
+ },
+ {
+  "ref": 20633,
+  "class": "LocalScript",
+  "name": "LeaderboardLogic",
+  "path": "Model/LeaderboardUI_V11/LeaderboardLogic",
+  "file": "Model/LeaderboardUI_V11/LeaderboardLogic.client.lua",
+  "bytes": 7529
+ },
+ {
+  "ref": 20720,
+  "class": "LocalScript",
+  "name": "GuHandler",
+  "path": "Model/MainGui/GuHandler",
+  "file": "Model/MainGui/GuHandler.client.lua",
+  "bytes": 9280
+ },
+ {
+  "ref": 20747,
+  "class": "ModuleScript",
+  "name": "UiSyncer",
+  "path": "Model/MusicUI/UiSyncer",
+  "file": "Model/MusicUI/UiSyncer.lua",
+  "bytes": 3221
+ },
+ {
+  "ref": 20748,
+  "class": "ModuleScript",
+  "name": "Player",
+  "path": "Model/MusicUI/Player",
+  "file": "Model/MusicUI/Player.lua",
+  "bytes": 4462
+ },
+ {
+  "ref": 20749,
+  "class": "LocalScript",
+  "name": "PlayerHandler",
+  "path": "Model/MusicUI/PlayerHandler",
+  "file": "Model/MusicUI/PlayerHandler.client.lua",
+  "bytes": 15033
+ },
+ {
+  "ref": 20759,
+  "class": "LocalScript",
+  "name": "Dragging",
+  "path": "Model/MusicUI/Dragging",
+  "file": "Model/MusicUI/Dragging.client.lua",
+  "bytes": 1152
+ },
+ {
+  "ref": 20761,
+  "class": "ModuleScript",
+  "name": "Songs",
+  "path": "Model/MusicUI/Songs",
+  "file": "Model/MusicUI/Songs.lua",
+  "bytes": 9516
+ },
+ {
+  "ref": 20762,
+  "class": "ModuleScript",
+  "name": "PitchConfig",
+  "path": "Model/MusicUI/PitchConfig",
+  "file": "Model/MusicUI/PitchConfig.lua",
+  "bytes": 3366
+ },
+ {
+  "ref": 20873,
+  "class": "ModuleScript",
+  "name": "SongCollection",
+  "path": "Model/MusicUI/Classes/SongCollection",
+  "file": "Model/MusicUI/Classes/SongCollection.lua",
+  "bytes": 1158
+ },
+ {
+  "ref": 20874,
+  "class": "ModuleScript",
+  "name": "SongInfo",
+  "path": "Model/MusicUI/Classes/SongInfo",
+  "file": "Model/MusicUI/Classes/SongInfo.lua",
+  "bytes": 546
+ },
+ {
+  "ref": 20881,
+  "class": "LocalScript",
+  "name": "SideNotifcationClient",
+  "path": "Model/NotificationSytems/SideNotifcationClient",
+  "file": "Model/NotificationSytems/SideNotifcationClient.client.lua",
+  "bytes": 2639
+ },
+ {
+  "ref": 21019,
+  "class": "LocalScript",
+  "name": "Main",
+  "path": "Model/PianoGui/Main",
+  "file": "Model/PianoGui/Main.client.lua",
+  "bytes": 12857
+ },
+ {
+  "ref": 21256,
+  "class": "LocalScript",
+  "name": "LocalNuke",
+  "path": "Model/ScreenGuuii/LocalNuke",
+  "file": "Model/ScreenGuuii/LocalNuke.client.lua",
+  "bytes": 11894
+ },
+ {
+  "ref": 21261,
+  "class": "ModuleScript",
+  "name": "CameraShaker",
+  "path": "Model/ScreenGuuii/LocalNuke/CameraShaker",
+  "file": "Model/ScreenGuuii/LocalNuke/CameraShaker.lua",
+  "bytes": 6043
+ },
+ {
+  "ref": 21262,
+  "class": "ModuleScript",
+  "name": "CameraShakeInstance",
+  "path": "Model/ScreenGuuii/LocalNuke/CameraShaker/CameraShakeInstance",
+  "file": "Model/ScreenGuuii/LocalNuke/CameraShaker/CameraShakeInstance.lua",
+  "bytes": 3723
+ },
+ {
+  "ref": 21263,
+  "class": "ModuleScript",
+  "name": "CameraShakePresets",
+  "path": "Model/ScreenGuuii/LocalNuke/CameraShaker/CameraShakePresets",
+  "file": "Model/ScreenGuuii/LocalNuke/CameraShaker/CameraShakePresets.lua",
+  "bytes": 2369
+ },
+ {
+  "ref": 21267,
+  "class": "LocalScript",
+  "name": "SpawnFireworks",
+  "path": "Model/ScreenGuuii/LocalNuke/Scripts/SpawnFireworks",
+  "file": "Model/ScreenGuuii/LocalNuke/Scripts/SpawnFireworks.client.lua",
+  "bytes": 3869
+ },
+ {
+  "ref": 21286,
+  "class": "LocalScript",
+  "name": "Event",
+  "path": "Model/ScreenGuuii/Event",
+  "file": "Model/ScreenGuuii/Event.client.lua",
+  "bytes": 22110
+ },
+ {
+  "ref": 21287,
+  "class": "ModuleScript",
+  "name": "CameraShaker",
+  "path": "Model/ScreenGuuii/Event/CameraShaker",
+  "file": "Model/ScreenGuuii/Event/CameraShaker.lua",
+  "bytes": 6250
+ },
+ {
+  "ref": 21288,
+  "class": "ModuleScript",
+  "name": "CameraShakeInstance",
+  "path": "Model/ScreenGuuii/Event/CameraShaker/CameraShakeInstance",
+  "file": "Model/ScreenGuuii/Event/CameraShaker/CameraShakeInstance.lua",
+  "bytes": 3890
+ },
+ {
+  "ref": 21289,
+  "class": "ModuleScript",
+  "name": "CameraShakePresets",
+  "path": "Model/ScreenGuuii/Event/CameraShaker/CameraShakePresets",
+  "file": "Model/ScreenGuuii/Event/CameraShaker/CameraShakePresets.lua",
+  "bytes": 2369
+ },
+ {
+  "ref": 21290,
+  "class": "LocalScript",
+  "name": "UltraAnimation",
+  "path": "Model/ScreenGuuii/UltraAnimation",
+  "file": "Model/ScreenGuuii/UltraAnimation.client.lua",
+  "bytes": 27889
+ },
+ {
+  "ref": 21291,
+  "class": "ModuleScript",
+  "name": "CameraShaker",
+  "path": "Model/ScreenGuuii/UltraAnimation/CameraShaker",
+  "file": "Model/ScreenGuuii/UltraAnimation/CameraShaker.lua",
+  "bytes": 6043
+ },
+ {
+  "ref": 21292,
+  "class": "ModuleScript",
+  "name": "CameraShakeInstance",
+  "path": "Model/ScreenGuuii/UltraAnimation/CameraShaker/CameraShakeInstance",
+  "file": "Model/ScreenGuuii/UltraAnimation/CameraShaker/CameraShakeInstance.lua",
+  "bytes": 3723
+ },
+ {
+  "ref": 21293,
+  "class": "ModuleScript",
+  "name": "CameraShakePresets",
+  "path": "Model/ScreenGuuii/UltraAnimation/CameraShaker/CameraShakePresets",
+  "file": "Model/ScreenGuuii/UltraAnimation/CameraShaker/CameraShakePresets.lua",
+  "bytes": 2369
+ },
+ {
+  "ref": 21294,
+  "class": "ModuleScript",
+  "name": "CameraShaker",
+  "path": "Model/ScreenGuuii/UltraAnimation/CameraShaker/CameraShaker",
+  "file": "Model/ScreenGuuii/UltraAnimation/CameraShaker/CameraShaker.lua",
+  "bytes": 6043
+ },
+ {
+  "ref": 21295,
+  "class": "ModuleScript",
+  "name": "CameraShakeInstance",
+  "path": "Model/ScreenGuuii/UltraAnimation/CameraShaker/CameraShaker/CameraShakeInstance",
+  "file": "Model/ScreenGuuii/UltraAnimation/CameraShaker/CameraShaker/CameraShakeInstance.lua",
+  "bytes": 3723
+ },
+ {
+  "ref": 21296,
+  "class": "ModuleScript",
+  "name": "CameraShakePresets",
+  "path": "Model/ScreenGuuii/UltraAnimation/CameraShaker/CameraShaker/CameraShakePresets",
+  "file": "Model/ScreenGuuii/UltraAnimation/CameraShaker/CameraShaker/CameraShakePresets.lua",
+  "bytes": 2369
+ },
+ {
+  "ref": 21297,
+  "class": "ModuleScript",
+  "name": "CameraShaker",
+  "path": "Model/ScreenGuuii/UltraAnimation/CameraShaker/CameraShaker/CameraShaker",
+  "file": "Model/ScreenGuuii/UltraAnimation/CameraShaker/CameraShaker/CameraShaker.lua",
+  "bytes": 6043
+ },
+ {
+  "ref": 21298,
+  "class": "ModuleScript",
+  "name": "CameraShakeInstance",
+  "path": "Model/ScreenGuuii/UltraAnimation/CameraShaker/CameraShaker/CameraShaker/CameraShakeInstance",
+  "file": "Model/ScreenGuuii/UltraAnimation/CameraShaker/CameraShaker/CameraShaker/CameraShakeInstance.lua",
+  "bytes": 3723
+ },
+ {
+  "ref": 21299,
+  "class": "ModuleScript",
+  "name": "CameraShakePresets",
+  "path": "Model/ScreenGuuii/UltraAnimation/CameraShaker/CameraShaker/CameraShaker/CameraShakePresets",
+  "file": "Model/ScreenGuuii/UltraAnimation/CameraShaker/CameraShaker/CameraShaker/CameraShakePresets.lua",
+  "bytes": 2369
+ },
+ {
+  "ref": 21301,
+  "class": "LocalScript",
+  "name": "LocalScript",
+  "path": "Model/SettingsUI/LocalScript",
+  "file": "Model/SettingsUI/LocalScript.client.lua",
+  "bytes": 2654
+ },
+ {
+  "ref": 21316,
+  "class": "LocalScript",
+  "name": "Slider",
+  "path": "Model/SettingsUI/MainFrame/SettingsContainers/1SOU/Frame/Slider",
+  "file": "Model/SettingsUI/MainFrame/SettingsContainers/1SOU/Frame/Slider.client.lua",
+  "bytes": 1891
+ },
+ {
+  "ref": 21397,
+  "class": "LocalScript",
+  "name": "Slider",
+  "path": "Model/SettingsUI/MainFrame/SettingsContainers/2SOU/Frame/Slider",
+  "file": "Model/SettingsUI/MainFrame/SettingsContainers/2SOU/Frame/Slider.client.lua",
+  "bytes": 1905
+ },
+ {
+  "ref": 21429,
+  "class": "LocalScript",
+  "name": "HD",
+  "path": "Model/SettingsUI/SettingsScript/HD",
+  "file": "Model/SettingsUI/SettingsScript/HD.client.lua",
+  "bytes": 1639
+ },
+ {
+  "ref": 21430,
+  "class": "LocalScript",
+  "name": "RAIN",
+  "path": "Model/SettingsUI/SettingsScript/RAIN",
+  "file": "Model/SettingsUI/SettingsScript/RAIN.client.lua",
+  "bytes": 1077
+ },
+ {
+  "ref": 21431,
+  "class": "LocalScript",
+  "name": "JBL",
+  "path": "Model/SettingsUI/SettingsScript/JBL",
+  "file": "Model/SettingsUI/SettingsScript/JBL.client.lua",
+  "bytes": 779
+ },
+ {
+  "ref": 21432,
+  "class": "LocalScript",
+  "name": "DOF",
+  "path": "Model/SettingsUI/SettingsScript/DOF",
+  "file": "Model/SettingsUI/SettingsScript/DOF.client.lua",
+  "bytes": 522
+ },
+ {
+  "ref": 21433,
+  "class": "LocalScript",
+  "name": "BILLBOARD",
+  "path": "Model/SettingsUI/SettingsScript/BILLBOARD",
+  "file": "Model/SettingsUI/SettingsScript/BILLBOARD.client.lua",
+  "bytes": 582
+ },
+ {
+  "ref": 21434,
+  "class": "LocalScript",
+  "name": "AURA",
+  "path": "Model/SettingsUI/SettingsScript/AURA",
+  "file": "Model/SettingsUI/SettingsScript/AURA.client.lua",
+  "bytes": 5855
+ },
+ {
+  "ref": 21435,
+  "class": "LocalScript",
+  "name": "CAR_SOUND",
+  "path": "Model/SettingsUI/SettingsScript/CAR_SOUND",
+  "file": "Model/SettingsUI/SettingsScript/CAR_SOUND.client.lua",
+  "bytes": 1364
+ },
+ {
+  "ref": 21436,
+  "class": "LocalScript",
+  "name": "SWAY",
+  "path": "Model/SettingsUI/SettingsScript/SWAY",
+  "file": "Model/SettingsUI/SettingsScript/SWAY.client.lua",
+  "bytes": 1001
+ },
+ {
+  "ref": 21447,
+  "class": "LocalScript",
+  "name": "LocalScript",
+  "path": "Model/SettingsUI/Skyback/LocalScript",
+  "file": "Model/SettingsUI/Skyback/LocalScript.client.lua",
+  "bytes": 38
+ },
+ {
+  "ref": 21454,
+  "class": "LocalScript",
+  "name": "Handler",
+  "path": "Model/SettingsUI/Skyback/Skys/Handler",
+  "file": "Model/SettingsUI/Skyback/Skys/Handler.client.lua",
+  "bytes": 680
+ },
+ {
+  "ref": 21457,
+  "class": "LocalScript",
+  "name": "Equiphandler",
+  "path": "Model/SettingsUI/Skyback/Skys/SkysScroll/Equiphandler",
+  "file": "Model/SettingsUI/Skyback/Skys/SkysScroll/Equiphandler.client.lua",
+  "bytes": 1549
+ },
+ {
+  "ref": 21461,
+  "class": "LocalScript",
+  "name": "goback",
+  "path": "Model/SettingsUI/Skyback/goback/goback",
+  "file": "Model/SettingsUI/Skyback/goback/goback.client.lua",
+  "bytes": 131
+ },
+ {
+  "ref": 21466,
+  "class": "LocalScript",
+  "name": "EnableRainScript",
+  "path": "Model/SettingsUI/Skyback/EnableRainButton/EnableRainScript",
+  "file": "Model/SettingsUI/Skyback/EnableRainButton/EnableRainScript.client.lua",
+  "bytes": 2134
+ },
+ {
+  "ref": 21473,
+  "class": "ModuleScript",
+  "name": "TabUIData",
+  "path": "Model/ShopUI/TabUIData",
+  "file": "Model/ShopUI/TabUIData.lua",
+  "bytes": 2048
+ },
+ {
+  "ref": 21474,
+  "class": "LocalScript",
+  "name": "ShopHandler",
+  "path": "Model/ShopUI/ShopHandler",
+  "file": "Model/ShopUI/ShopHandler.client.lua",
+  "bytes": 8851
+ },
+ {
+  "ref": 21534,
+  "class": "ModuleScript",
+  "name": "Tab",
+  "path": "Model/ShopUI/Components/Tab",
+  "file": "Model/ShopUI/Components/Tab.lua",
+  "bytes": 3613
+ },
+ {
+  "ref": 21535,
+  "class": "ModuleScript",
+  "name": "SubCategory",
+  "path": "Model/ShopUI/Components/SubCategory",
+  "file": "Model/ShopUI/Components/SubCategory.lua",
+  "bytes": 6364
+ },
+ {
+  "ref": 21536,
+  "class": "ModuleScript",
+  "name": "Item",
+  "path": "Model/ShopUI/Components/Item",
+  "file": "Model/ShopUI/Components/Item.lua",
+  "bytes": 12141
+ },
+ {
+  "ref": 21537,
+  "class": "ModuleScript",
+  "name": "ItemInfo",
+  "path": "Model/ShopUI/Components/ItemInfo",
+  "file": "Model/ShopUI/Components/ItemInfo.lua",
+  "bytes": 8834
+ },
+ {
+  "ref": 21692,
+  "class": "LocalScript",
+  "name": "LocalScript",
+  "path": "Model/VFXPopupGui/LocalScript",
+  "file": "Model/VFXPopupGui/LocalScript.client.lua",
+  "bytes": 3506
+ },
+ {
+  "ref": 21711,
+  "class": "LocalScript",
+  "name": "update size",
+  "path": "Model/dialog/dialogResponses/template/text/update size",
+  "file": "Model/dialog/dialogResponses/template/text/update size.client.lua",
+  "bytes": 881
+ },
+ {
+  "ref": 21713,
+  "class": "LocalScript",
+  "name": "ACMv7",
+  "path": "Model/ACMv7",
+  "file": "Model/ACMv7.client.lua",
+  "bytes": 79723
+ },
+ {
+  "ref": 21714,
+  "class": "LocalScript",
+  "name": "Adminrodmanager",
+  "path": "Model/Adminrodmanager",
+  "file": "Model/Adminrodmanager.client.lua",
+  "bytes": 16951
+ },
+ {
+  "ref": 21715,
+  "class": "LocalScript",
+  "name": "BottleQuestClient",
+  "path": "Model/BottleQuestClient",
+  "file": "Model/BottleQuestClient.client.lua",
+  "bytes": 36729
+ },
+ {
+  "ref": 21716,
+  "class": "LocalScript",
+  "name": "ChatDisplayClient",
+  "path": "Model/ChatDisplayClient",
+  "file": "Model/ChatDisplayClient.client.lua",
+  "bytes": 1629
+ },
+ {
+  "ref": 21717,
+  "class": "LocalScript",
+  "name": "CustomInventoryManager",
+  "path": "Model/CustomInventoryManager",
+  "file": "Model/CustomInventoryManager.client.lua",
+  "bytes": 47160
+ },
+ {
+  "ref": 21718,
+  "class": "LocalScript",
+  "name": "DeviceReporter",
+  "path": "Model/DeviceReporter",
+  "file": "Model/DeviceReporter.client.lua",
+  "bytes": 701
+ },
+ {
+  "ref": 21719,
+  "class": "LocalScript",
+  "name": "DonationClient",
+  "path": "Model/DonationClient",
+  "file": "Model/DonationClient.client.lua",
+  "bytes": 21845
+ },
+ {
+  "ref": 21720,
+  "class": "LocalScript",
+  "name": "FishTransferClient",
+  "path": "Model/FishTransferClient",
+  "file": "Model/FishTransferClient.client.lua",
+  "bytes": 10475
+ },
+ {
+  "ref": 21721,
+  "class": "LocalScript",
+  "name": "FishingSystem",
+  "path": "Model/FishingSystem",
+  "file": "Model/FishingSystem.client.lua",
+  "bytes": 50832
+ },
+ {
+  "ref": 21722,
+  "class": "LocalScript",
+  "name": "FreeCam",
+  "path": "Model/FreeCam",
+  "file": "Model/FreeCam.client.lua",
+  "bytes": 33438
+ },
+ {
+  "ref": 21723,
+  "class": "LocalScript",
+  "name": "GiftNotification",
+  "path": "Model/GiftNotification",
+  "file": "Model/GiftNotification.client.lua",
+  "bytes": 2206
+ },
+ {
+  "ref": 21724,
+  "class": "LocalScript",
+  "name": "Hanlder_ADC",
+  "path": "Model/Hanlder_ADC",
+  "file": "Model/Hanlder_ADC.client.lua",
+  "bytes": 2246
+ },
+ {
+  "ref": 21725,
+  "class": "LocalScript",
+  "name": "JoinGroup",
+  "path": "Model/JoinGroup",
+  "file": "Model/JoinGroup.client.lua",
+  "bytes": 643
+ },
+ {
+  "ref": 21726,
+  "class": "LocalScript",
+  "name": "Kerang Ajaib",
+  "path": "Model/Kerang Ajaib",
+  "file": "Model/Kerang Ajaib.client.lua",
+  "bytes": 6661
+ },
+ {
+  "ref": 21727,
+  "class": "LocalScript",
+  "name": "LUCK BOOST SHOP CLIENT",
+  "path": "Model/LUCK BOOST SHOP CLIENT",
+  "file": "Model/LUCK BOOST SHOP CLIENT.client.lua",
+  "bytes": 13140
+ },
+ {
+  "ref": 21728,
+  "class": "LocalScript",
+  "name": "LocalScript",
+  "path": "Model/LocalScript",
+  "file": "Model/LocalScript.client.lua",
+  "bytes": 5750
+ },
+ {
+  "ref": 21729,
+  "class": "LocalScript",
+  "name": "MicParticles",
+  "path": "Model/MicParticles",
+  "file": "Model/MicParticles.client.lua",
+  "bytes": 5061
+ },
+ {
+  "ref": 21731,
+  "class": "LocalScript",
+  "name": "NametagRole",
+  "path": "Model/NametagRole",
+  "file": "Model/NametagRole.client.lua",
+  "bytes": 35441
+ },
+ {
+  "ref": 21732,
+  "class": "LocalScript",
+  "name": "ProximityPromptScript",
+  "path": "Model/ProximityPromptScript",
+  "file": "Model/ProximityPromptScript.client.lua",
+  "bytes": 19900
+ },
+ {
+  "ref": 21758,
+  "class": "LocalScript",
+  "name": "QUEST BOARD CLIENT",
+  "path": "Model/QUEST BOARD CLIENT",
+  "file": "Model/QUEST BOARD CLIENT.client.lua",
+  "bytes": 8773
+ },
+ {
+  "ref": 21759,
+  "class": "LocalScript",
+  "name": "QuestClientV2",
+  "path": "Model/QuestClientV2",
+  "file": "Model/QuestClientV2.client.lua",
+  "bytes": 8668
+ },
+ {
+  "ref": 21760,
+  "class": "LocalScript",
+  "name": "RodShopGuiManager",
+  "path": "Model/RodShopGuiManager",
+  "file": "Model/RodShopGuiManager.client.lua",
+  "bytes": 14985
+ },
+ {
+  "ref": 21761,
+  "class": "LocalScript",
+  "name": "Server Message System",
+  "path": "Model/Server Message System",
+  "file": "Model/Server Message System.client.lua",
+  "bytes": 384
+ },
+ {
+  "ref": 21762,
+  "class": "LocalScript",
+  "name": "ShiftToRun",
+  "path": "Model/ShiftToRun",
+  "file": "Model/ShiftToRun.client.lua",
+  "bytes": 3940
+ },
+ {
+  "ref": 21763,
+  "class": "LocalScript",
+  "name": "Sound",
+  "path": "Model/Sound",
+  "file": "Model/Sound.client.lua",
+  "bytes": 604
+ },
+ {
+  "ref": 21764,
+  "class": "LocalScript",
+  "name": "eventsecretclient",
+  "path": "Model/eventsecretclient",
+  "file": "Model/eventsecretclient.client.lua",
+  "bytes": 7710
+ },
+ {
+  "ref": 21765,
+  "class": "LocalScript",
+  "name": "uiannounce",
+  "path": "Model/uiannounce",
+  "file": "Model/uiannounce.client.lua",
+  "bytes": 8064
+ },
+ {
+  "ref": 21766,
+  "class": "LocalScript",
+  "name": "updateShopInfo",
+  "path": "Model/updateShopInfo",
+  "file": "Model/updateShopInfo.client.lua",
+  "bytes": 1472
+ },
+ {
+  "ref": 21767,
+  "class": "ModuleScript",
+  "name": "PlayerAssets",
+  "path": "Model/PlayerAssets",
+  "file": "Model/PlayerAssets.lua",
+  "bytes": 5548
+ },
+ {
+  "ref": 21777,
+  "class": "LocalScript",
+  "name": "Sound",
+  "path": "Model/PlayerAssets/Template/PurchaseButton/Sound",
+  "file": "Model/PlayerAssets/Template/PurchaseButton/Sound.client.lua",
+  "bytes": 151
+ },
+ {
+  "ref": 21780,
+  "class": "Script",
+  "name": "Script",
+  "path": "Model/PlayerAssets/Template/UIStroke/Script",
+  "file": "Model/PlayerAssets/Template/UIStroke/Script.server.lua",
+  "bytes": 480
+ }
+]
