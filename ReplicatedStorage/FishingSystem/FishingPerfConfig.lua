@@ -3,10 +3,15 @@
 --
 -- Satu tempat untuk semua angka performa sistem fishing.
 -- Dipakai oleh: FishingSystem server (radius broadcast) dan
--- FishingSystem client (budget VFX, LOD, interval simulasi hook lain).
+-- FishingSystem client (LOD VFX, budget efek, interval simulasi hook lain).
 --
--- Tidak mengubah gameplay: hanya menentukan SIAPA yang menerima efek,
--- seberapa banyak efek boleh aktif, dan seberapa sering simulasi berjalan.
+-- LOD splash (client, per jarak dari splash):
+--   LOCAL : efek milik sendiri — selalu full quality.
+--   NEAR  : full komponen (Sound/Light/Beam/Trail hidup), emit x NearEmitMultiplier.
+--   MID   : tanpa Sound + Light, emit x MidEmitMultiplier.
+--   FAR   : tanpa Sound + Light + Beam + Trail, emit x FarEmitMultiplier,
+--           cleanup lebih pendek. Template tetap sama → efek tetap terlihat.
+--   > FarRadius : di-skip client (server juga cull di VfxBroadcastRadius).
 
 local RunService = game:GetService("RunService")
 
@@ -14,47 +19,54 @@ local PerfConfig = {}
 
 -- ═══════════════════════════════════════════════════════════════
 -- SERVER: RADIUS BROADCAST (studs)
--- Efek dunia hanya dikirim ke player dalam radius ini.
--- Caster/pemilik SELALU menerima efek miliknya sendiri.
 -- ═══════════════════════════════════════════════════════════════
-PerfConfig.VfxBroadcastRadius = 150     -- splash VFX rod khusus
+PerfConfig.VfxBroadcastRadius = 350     -- batas terluar splash dikirim (>= FarRadius tier tertinggi)
 PerfConfig.CastBroadcastRadius = 80     -- replikasi cast (client memfilter > 60, margin 20)
 PerfConfig.CleanupBroadcastRadius = 150 -- relay cleanup cast (client punya safety timeout sendiri)
 
 -- ═══════════════════════════════════════════════════════════════
 -- CLIENT: KUALITAS VFX
--- ForceQuality: isi "HIGH" / "MEDIUM" / "LOW" untuk memaksa tier,
+-- ForceQuality: "HIGH" / "MEDIUM" / "LOW" untuk memaksa tier,
 -- nil = deteksi otomatis (graphics setting player + jenis perangkat).
 -- ═══════════════════════════════════════════════════════════════
 PerfConfig.ForceQuality = nil
 
 PerfConfig.Quality = {
 	HIGH = {
-		NearbyEffectRadius = 150,       -- efek caster lain di luar radius ini di-skip client
-		MaxTotalEffects = 10,           -- total splash VFX aktif bersamaan
-		MaxEffectsPerPlayer = 2,        -- splash aktif per caster
-		VfxCooldown = 0.15,             -- jeda minimum antar splash per caster
-		NearbyEmitMultiplier = 1.0,     -- skala partikel efek milik player LAIN (lokal selalu 1.0)
-		MaxOtherHooks = 4,              -- hook player lain yang disimulasikan
+		NearRadius = 80,
+		MidRadius = 180,
+		FarRadius = 350,
+		NearEmitMultiplier = 1.0,
+		MidEmitMultiplier = 0.45,
+		FarEmitMultiplier = 0.15,
+		MaxTotalEffects = 10,           -- total splash aktif; saat penuh: efek lokal/terdekat menggusur yang terjauh
+		VfxCooldown = 0.15,             -- jeda minimum antar splash per caster (dedup "satu cast satu splash")
+		MaxOtherHooks = 4,
 		OtherHookPhysicsInterval = 0.083,
 		OtherHookLandCheckInterval = 0.08,
 	},
 	MEDIUM = {
-		NearbyEffectRadius = 110,
+		NearRadius = 60,
+		MidRadius = 140,
+		FarRadius = 250,
+		NearEmitMultiplier = 0.6,
+		MidEmitMultiplier = 0.3,
+		FarEmitMultiplier = 0.1,
 		MaxTotalEffects = 6,
-		MaxEffectsPerPlayer = 1,
 		VfxCooldown = 0.25,
-		NearbyEmitMultiplier = 0.6,
 		MaxOtherHooks = 3,
 		OtherHookPhysicsInterval = 0.1,
 		OtherHookLandCheckInterval = 0.12,
 	},
 	LOW = {
-		NearbyEffectRadius = 70,
+		NearRadius = 50,
+		MidRadius = 100,
+		FarRadius = 160,
+		NearEmitMultiplier = 0.35,
+		MidEmitMultiplier = 0.2,
+		FarEmitMultiplier = 0.08,
 		MaxTotalEffects = 3,
-		MaxEffectsPerPlayer = 1,
 		VfxCooldown = 0.4,
-		NearbyEmitMultiplier = 0.35,
 		MaxOtherHooks = 2,
 		OtherHookPhysicsInterval = 0.125,
 		OtherHookLandCheckInterval = 0.15,

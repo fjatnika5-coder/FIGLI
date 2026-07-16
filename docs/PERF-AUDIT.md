@@ -145,3 +145,47 @@ Mobile: uji tier auto (harus MEDIUM/LOW), lalu `ForceQuality="HIGH"` untuk pemba
 - **Butuh runtime test**: semua angka radius/budget adalah nilai awal yang masuk akal, bukan hasil profiling — tuning via FishingPerfConfig setelah MicroProfiler.
 - **Tidak dikirim/di luar audit**: isi asset template VfxSplash, chat UI listener SendChatMessage, GUI.
 - Preload: tidak ditambahkan — belum ada bukti spike-nya dari loading; kalau MicroProfiler menunjukkan spike hanya pada splash PERTAMA per rod, tambahkan `ContentProvider:PreloadAsync` untuk 3–5 template VfxSplash rod terpopuler saja (bukan seluruh game).
+
+---
+
+# UPDATE — VFX LOD BERTINGKAT (revisi hard cutoff 150)
+
+Menggantikan distance-gate keras dengan LOD. Bagian G lama (NearbyEffectRadius/MaxEffectsPerPlayer/NearbyEmitMultiplier) digantikan key baru di bawah.
+
+## Perilaku baru
+
+Server: `VfxBroadcastRadius` 150 → **350** (efek pemain jauh kini dikirim; penerimanya merender versi murah). Kode server tidak berubah — hanya nilai config.
+
+Client per event splash → pilih LOD dari jarak:
+
+| LOD | Jarak (HIGH) | Komponen | Emit |
+|---|---|---|---|
+| LOCAL | milik sendiri | semua | 1.0 |
+| NEAR | ≤80 | semua (Sound/Light/Beam/Trail hidup) | ×NearEmitMultiplier (1.0) |
+| MID | ≤180 | tanpa Sound + Light | ×MidEmitMultiplier (0.45) |
+| FAR | ≤350 | tanpa Sound + Light + Beam + Trail; cleanup ≤3 s | ×FarEmitMultiplier (0.15) |
+| >FarRadius | — | skip (counter `skippedRange`) | — |
+
+Template VFX SAMA untuk semua LOD — komponen mahal di-Destroy pada clone, EmitCount/Rate diskalakan. MEDIUM: 60/140/250, 0.6/0.3/0.1. LOW: 50/100/160, 0.35/0.2/0.08.
+
+## Jaminan yang diminta
+
+- **Satu cast = satu splash**: client fire 1×/landing (guard `hasLanded`), server debounce 0.15 s + 8/s, dan client `tryReserveVFXBudget` menolak event kedua per caster dalam `VfxCooldown` (counter `duplicateBlocked` membuktikan setiap duplikat yang ditolak). Per caster maksimal 1 efek aktif (yang baru menggantikan miliknya).
+- **Maks SATU GetDescendants per clone**: satu pass mengumpulkan emitters/sounds/beams/trails/lights + positioning Folder sekaligus; pass beam-attach & emit bekerja dari list; cleanup-time dihitung dari list itu dan di-cache per rod (`vfxCleanupTimeCache`) — clone berikutnya rod yang sama memakai cache.
+- **Prioritas budget**: saat `MaxTotalEffects` penuh — efek LocalPlayer SELALU masuk (menggusur efek non-lokal terjauh); efek lain masuk hanya bila lebih dekat daripada efek non-lokal terjauh (yang terjauh digusur, counter `evictedForPriority`); selain itu ditolak (`skippedBudget`). Efek lokal tidak pernah digusur oleh efek orang lain.
+- **Pembuktian runtime**: `_G.GetFishingVFXStats()` dari command bar client → `{spawnedTotal, spawnedLocal/Near/Mid/Far, skippedRange, skippedBudget, duplicateBlocked, evictedForPriority, activeNow, quality}`. MicroProfiler: cari label **"FishingSplashVFX"** (membungkus clone + traversal + apply LOD) — bandingkan durasinya antar LOD dan vs versi lama.
+- **Pooling**: TIDAK dibuat. Keputusan menunggu bukti: kalau setelah patch label "FishingSplashVFX" masih menunjukkan spike dominan pada Clone/Parent (bukan render partikel), baru pertimbangkan pooling.
+
+## Test tambahan
+
+- 2 client Studio, jarak 200 stud: pemancing A splash → client B harus render FAR (tanpa sound/beam, partikel sedikit), `spawnedFar` naik.
+- Jarak 30 stud: `spawnedNear` naik, sound terdengar.
+- 12 pemancing bersamaan (HIGH, budget 10): `evictedForPriority`/`skippedBudget` naik, yang tampil = milik sendiri + 9 terdekat.
+- Spam cast 1 pemain: `duplicateBlocked` = 0 pada gameplay normal (bukti satu cast satu splash); naik hanya kalau ada event duplikat.
+- MicroProfiler: durasi "FishingSplashVFX" FAR < NEAR; pass kedua rod sama lebih cepat (cache cleanup-time).
+
+## Kejujuran tambahan
+
+- Radius kirim naik 150→350 = lebih banyak penerima per splash; trade-off sengaja: penerima jauh kini memproses versi FAR yang murah (tanpa sound/light/beam/trail, emit ±15%). Kalau Network Receive jadi masalah di server 20+ pemain, turunkan `VfxBroadcastRadius` — client otomatis ikut.
+- Efek skala emit pada template yang HANYA memakai `Enabled=true` (tanpa attribute EmitCount): hanya Rate yang turun; burst instan template semacam itu tidak terpengaruh — tergantung isi asset (tidak dikirim).
+- Belum runtime-test; Luau syntax belum dieksekusi — jalankan di Studio, cek Output bersih dulu.

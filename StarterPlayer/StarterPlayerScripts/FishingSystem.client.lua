@@ -5,13 +5,15 @@
 -- [PERF-2] Tier kualitas VFX (HIGH/MEDIUM/LOW) dari graphics setting player +
 --          jenis perangkat. Budget efek (total aktif, per caster, cooldown)
 --          mengikuti tier.
--- [PERF-3] Distance gate: splash milik player lain di luar NearbyEffectRadius
---          di-skip sepenuhnya (server juga sudah radius-culled; ini lapisan
---          kedua untuk perangkat lemah).
--- [PERF-4] Partikel efek milik player LAIN diskalakan NearbyEmitMultiplier;
---          efek milik sendiri selalu full quality.
--- [PERF-5] Waktu cleanup VFX di-cache per rod — menghapus satu pass
---          GetDescendants penuh pada setiap splash.
+-- [PERF-3] VFX LOD bertingkat: LOCAL (full) / NEAR / MID / FAR. Efek pemain
+--          jauh tetap terlihat dengan template yang sama, emit lebih rendah;
+--          MID membuang Sound + Light, FAR juga membuang Beam + Trail.
+-- [PERF-4] Budget efek dengan prioritas: saat penuh, efek LocalPlayer dan
+--          efek terdekat menggusur efek non-lokal terjauh.
+-- [PERF-5] Metadata template (waktu cleanup) di-cache per rod; setiap clone
+--          maksimal SATU traversal GetDescendants.
+-- [PERF-7] Counter runtime (_G.GetFishingVFXStats) + label MicroProfiler
+--          "FishingSplashVFX" untuk pembuktian.
 -- [PERF-6] Interval simulasi hook player lain + jumlah maksimum hook
 --          mengikuti tier perangkat.
 
@@ -147,33 +149,50 @@ for _, name in ipairs({
 	RODS_WITH_SPLASH_SET[name] = true
 end
 
--- [PERF-2] Budget dari tier perangkat.
-local VFX_CONFIG = {
-	COOLDOWN              = PERF.VfxCooldown,
-	MAX_ACTIVE_PER_PLAYER = PERF.MaxEffectsPerPlayer,
-	MAX_TOTAL_ACTIVE      = PERF.MaxTotalEffects,
-	DEFAULT_CLEANUP_TIME  = 2.0,
-	MOBILE_CLEANUP_TIME   = 1.5,
-	MAX_CLEANUP_TIME      = 8.0,
-}
+-- [PERF-2] Budget & LOD dari tier perangkat.
+local VFX_DEFAULT_CLEANUP_TIME = 2.0
+local VFX_MOBILE_CLEANUP_TIME  = 1.5
+local VFX_MAX_CLEANUP_TIME     = 8.0
+local VFX_FAR_MAX_CLEANUP_TIME = 3.0
 
-local activeVFXPerPlayer = {}
+-- [userId] = { inst, position, spawnedAt }
+local activeEffects      = {}
 local totalActiveVFX     = 0
 local playerVFXLastSpawn = {}
 local otherPlayersHooks  = {}
 local VFX_SPLASH_ENABLED = true
 
--- [PERF-5] Cache waktu cleanup per rod (template statis → hasil deterministik).
+-- [PERF-5] Cache metadata template per rod (statis → deterministik).
 local vfxCleanupTimeCache = {}
+
+-- [PERF-7] Counter runtime untuk pembuktian.
+local vfxStats = {
+	spawnedTotal = 0,
+	spawnedLocal = 0,
+	spawnedNear = 0,
+	spawnedMid = 0,
+	spawnedFar = 0,
+	skippedRange = 0,
+	skippedBudget = 0,
+	duplicateBlocked = 0,
+	evictedForPriority = 0,
+}
+
+_G.GetFishingVFXStats = function()
+	local snapshot = table.clone(vfxStats)
+	snapshot.activeNow = totalActiveVFX
+	snapshot.quality = PerfConfig.GetQualityName()
+	return snapshot
+end
 
 _G.SetSplashVFXEnabled = function(enabled)
 	VFX_SPLASH_ENABLED = enabled
 	if not enabled then
-		for _, vfx in pairs(activeVFXPerPlayer) do
-			if vfx and vfx.Parent then vfx:Destroy() end
+		for _, rec in pairs(activeEffects) do
+			if rec.inst and rec.inst.Parent then rec.inst:Destroy() end
 		end
-		activeVFXPerPlayer = {}
-		totalActiveVFX     = 0
+		table.clear(activeEffects)
+		totalActiveVFX = 0
 	end
 end
 _G.GetSplashVFXEnabled = function() return VFX_SPLASH_ENABLED end
@@ -191,30 +210,79 @@ local function isVFXAllowed()
 	return true
 end
 
-local function canSpawnVFX(playerId)
-	if not isVFXAllowed() then return false end
-	if totalActiveVFX >= VFX_CONFIG.MAX_TOTAL_ACTIVE then return false end
-	local now = tick()
-	if (now - (playerVFXLastSpawn[playerId] or 0)) < VFX_CONFIG.COOLDOWN then return false end
-	local playerCount = 0
-	for userId, vfx in pairs(activeVFXPerPlayer) do
-		if userId == playerId and vfx and vfx.Parent then playerCount += 1 end
+local function getLocalHrpPosition()
+	local char = player.Character
+	local hrp = char and char:FindFirstChild("HumanoidRootPart")
+	return hrp and hrp.Position or nil
+end
+
+-- [PERF-3] Pilih LOD berdasarkan jarak. nil = di luar jangkauan tier.
+local function selectVFXLOD(casterPlayer, splashPosition)
+	if casterPlayer == player then return "LOCAL", 0 end
+	local myPos = getLocalHrpPosition()
+	if not myPos then return nil, math.huge end
+	local dist = (myPos - splashPosition).Magnitude
+	if dist <= PERF.NearRadius then return "NEAR", dist end
+	if dist <= PERF.MidRadius then return "MID", dist end
+	if dist <= PERF.FarRadius then return "FAR", dist end
+	return nil, dist
+end
+
+local function destroyEffectRecord(userId)
+	local rec = activeEffects[userId]
+	if not rec then return end
+	activeEffects[userId] = nil
+	totalActiveVFX = math.max(0, totalActiveVFX - 1)
+	if rec.inst and rec.inst.Parent then
+		rec.inst:Destroy()
 	end
-	if playerCount >= VFX_CONFIG.MAX_ACTIVE_PER_PLAYER then return false end
-	playerVFXLastSpawn[playerId] = now
-	return true
 end
 
 local function cleanupPlayerVFX(playerId)
-	local vfx = activeVFXPerPlayer[playerId]
-	if not vfx then return end
+	destroyEffectRecord(playerId)
+end
 
-	activeVFXPerPlayer[playerId] = nil
-	totalActiveVFX = math.max(0, totalActiveVFX - 1)
+-- [PERF-4] Reservasi budget:
+-- - Cooldown per caster = dedup event → satu cast satu splash.
+-- - Per caster maksimal satu efek aktif (yang baru menggantikan miliknya).
+-- - Saat budget total penuh: efek LocalPlayer atau efek yang lebih dekat
+--   menggusur efek non-lokal TERJAUH; selain itu ditolak.
+local function tryReserveVFXBudget(ownerUserId, isLocalOwner, distance)
+	if not isVFXAllowed() then return false end
 
-	if vfx.Parent then
-		vfx:Destroy()
+	local now = tick()
+	if (now - (playerVFXLastSpawn[ownerUserId] or 0)) < PERF.VfxCooldown then
+		vfxStats.duplicateBlocked += 1
+		return false
 	end
+
+	if activeEffects[ownerUserId] then
+		destroyEffectRecord(ownerUserId)
+	end
+
+	if totalActiveVFX >= PERF.MaxTotalEffects then
+		local myPos = getLocalHrpPosition()
+		local farthestId, farthestDist = nil, -1
+		for uid, rec in pairs(activeEffects) do
+			if uid ~= player.UserId then
+				local d = myPos and (myPos - rec.position).Magnitude or math.huge
+				if d > farthestDist then
+					farthestDist = d
+					farthestId = uid
+				end
+			end
+		end
+		if farthestId and (isLocalOwner or distance < farthestDist) then
+			destroyEffectRecord(farthestId)
+			vfxStats.evictedForPriority += 1
+		else
+			vfxStats.skippedBudget += 1
+			return false
+		end
+	end
+
+	playerVFXLastSpawn[ownerUserId] = now
+	return true
 end
 
 local function ensureAttachment(parent, name)
@@ -235,60 +303,67 @@ local function getMaxLifetime(emitter)
 	return 1.0
 end
 
-local function calculateVFXCleanupTime(vfxInstance)
+-- [PERF-5] Dihitung dari list hasil traversal tunggal, bukan traversal baru.
+local function computeCleanupTimeFromLists(emitters, sounds)
 	local maxTime, hasEmitter = 0, false
-	for _, desc in ipairs(vfxInstance:GetDescendants()) do
-		if desc:IsA("ParticleEmitter") then
-			hasEmitter = true
-			local emitDelay    = desc:GetAttribute("EmitDelay") or 0
-			local emitDuration = desc:GetAttribute("EmitDuration") or 0
-			local autoEmit     = desc:GetAttribute("AutoEmit")
-			local emitCount    = desc:GetAttribute("EmitCount")
-			local maxLifetime  = getMaxLifetime(desc)
-			local timeScaleDur = desc:GetAttribute("TimeScale_Duration") or 0
-			local endTime = 0
-			if autoEmit == true then
-				endTime = emitDuration > 0
-					and (emitDelay + emitDuration + maxLifetime)
-					or  (emitDelay + VFX_CONFIG.DEFAULT_CLEANUP_TIME)
-			elseif emitCount and emitCount > 0 then
-				endTime = emitDelay + maxLifetime
-			else
-				endTime = emitDelay + VFX_CONFIG.DEFAULT_CLEANUP_TIME
-			end
-			endTime = endTime + timeScaleDur
-			if endTime > maxTime then maxTime = endTime end
+	for _, desc in ipairs(emitters) do
+		hasEmitter = true
+		local emitDelay    = desc:GetAttribute("EmitDelay") or 0
+		local emitDuration = desc:GetAttribute("EmitDuration") or 0
+		local autoEmit     = desc:GetAttribute("AutoEmit")
+		local emitCount    = desc:GetAttribute("EmitCount")
+		local maxLifetime  = getMaxLifetime(desc)
+		local timeScaleDur = desc:GetAttribute("TimeScale_Duration") or 0
+		local endTime = 0
+		if autoEmit == true then
+			endTime = emitDuration > 0
+				and (emitDelay + emitDuration + maxLifetime)
+				or  (emitDelay + VFX_DEFAULT_CLEANUP_TIME)
+		elseif emitCount and emitCount > 0 then
+			endTime = emitDelay + maxLifetime
+		else
+			endTime = emitDelay + VFX_DEFAULT_CLEANUP_TIME
 		end
-		if desc:IsA("Sound") then
-			local soundEnd = (desc:GetAttribute("PlayDelay") or 0) + (desc.TimeLength or 0)
-			if soundEnd > maxTime then maxTime = soundEnd end
-		end
+		endTime = endTime + timeScaleDur
+		if endTime > maxTime then maxTime = endTime end
+	end
+	for _, snd in ipairs(sounds) do
+		local soundEnd = (snd:GetAttribute("PlayDelay") or 0) + (snd.TimeLength or 0)
+		if soundEnd > maxTime then maxTime = soundEnd end
 	end
 	if not hasEmitter then
-		return isMobile and VFX_CONFIG.MOBILE_CLEANUP_TIME or VFX_CONFIG.DEFAULT_CLEANUP_TIME
+		return isMobile and VFX_MOBILE_CLEANUP_TIME or VFX_DEFAULT_CLEANUP_TIME
 	end
-	local result = math.clamp(maxTime + 0.5, 0.5, VFX_CONFIG.MAX_CLEANUP_TIME)
+	local result = math.clamp(maxTime + 0.5, 0.5, VFX_MAX_CLEANUP_TIME)
 	if isMobile then result = math.max(0.5, result * 0.8) end
 	return result
 end
 
-local function spawnSplashVFXAtPosition(rodName, splashPosition, targetSinker, ownerPlayer)
-	if not ownerPlayer or not canSpawnVFX(ownerPlayer.UserId) then return nil end
+local VFX_LIGHT_CLASSES = { PointLight = true, SpotLight = true, SurfaceLight = true }
+
+local function getLODEmitScale(lodName)
+	if lodName == "LOCAL" then return 1 end
+	if lodName == "NEAR" then return PERF.NearEmitMultiplier end
+	if lodName == "MID" then return PERF.MidEmitMultiplier end
+	return PERF.FarEmitMultiplier
+end
+
+local function spawnSplashVFXAtPosition(rodName, splashPosition, targetSinker, ownerPlayer, lodName, distance)
+	if not ownerPlayer then return nil end
 	if not RODS_WITH_SPLASH_SET[rodName] then return nil end
 	local vfxTemplate = VfxSplashFolder:FindFirstChild(rodName)
 	if not vfxTemplate then return nil end
-	cleanupPlayerVFX(ownerPlayer.UserId)
 
-	-- [PERF-4] Efek milik sendiri selalu full; efek player lain diskalakan.
 	local isLocalOwner = ownerPlayer == player
-	local emitScale = isLocalOwner and 1 or PERF.NearbyEmitMultiplier
+	lodName = lodName or (isLocalOwner and "LOCAL" or "NEAR")
+	if not tryReserveVFXBudget(ownerPlayer.UserId, isLocalOwner, distance or 0) then return nil end
+
+	debug.profilebegin("FishingSplashVFX")
 
 	local vfxClone = vfxTemplate:Clone()
 	vfxClone.Name = "VFX_" .. rodName .. "_" .. ownerPlayer.Name
 	vfxClone:SetAttribute("IsSplashVFX", true)
 	vfxClone.Parent = workspace
-	activeVFXPerPlayer[ownerPlayer.UserId] = vfxClone
-	totalActiveVFX += 1
 	if vfxClone:IsA("Model") then
 		if vfxClone.PrimaryPart then
 			vfxClone:SetPrimaryPartCFrame(CFrame.new(splashPosition))
@@ -297,84 +372,135 @@ local function spawnSplashVFXAtPosition(rodName, splashPosition, targetSinker, o
 		end
 	elseif vfxClone:IsA("BasePart") then
 		vfxClone.CFrame = CFrame.new(splashPosition)
-	elseif vfxClone:IsA("Folder") then
-		local pivot = vfxClone:GetPivot()
-		for _, child in ipairs(vfxClone:GetDescendants()) do
-			if child:IsA("BasePart") then
-				child.Position = splashPosition + (child.Position - pivot.Position)
-			end
+	end
+
+	-- [PERF-5] SATU traversal per clone: kumpulkan semua instance sekali.
+	-- Posisi child Folder juga ditangani di pass yang sama.
+	local isFolder = vfxClone:IsA("Folder")
+	local folderPivot = isFolder and vfxClone:GetPivot() or nil
+	local emitters, sounds, beams, trails, lights = {}, {}, {}, {}, {}
+	for _, desc in ipairs(vfxClone:GetDescendants()) do
+		if desc:IsA("ParticleEmitter") then
+			emitters[#emitters + 1] = desc
+		elseif desc:IsA("Sound") then
+			sounds[#sounds + 1] = desc
+		elseif desc:IsA("Beam") then
+			beams[#beams + 1] = desc
+		elseif desc:IsA("Trail") then
+			trails[#trails + 1] = desc
+		elseif VFX_LIGHT_CLASSES[desc.ClassName] then
+			lights[#lights + 1] = desc
+		elseif isFolder and desc:IsA("BasePart") then
+			desc.Position = splashPosition + (desc.Position - folderPivot.Position)
 		end
 	end
+
+	-- Metadata cleanup time: attribute > cache per rod > hitung dari list.
+	local cleanupTime = vfxClone:GetAttribute("CleanupTime")
+	if cleanupTime and cleanupTime > 0 then
+		cleanupTime = math.clamp(cleanupTime, 0.5, VFX_MAX_CLEANUP_TIME)
+	else
+		cleanupTime = vfxCleanupTimeCache[rodName]
+		if not cleanupTime then
+			cleanupTime = computeCleanupTimeFromLists(emitters, sounds)
+			vfxCleanupTimeCache[rodName] = cleanupTime
+		end
+	end
+
+	-- [PERF-3] Aturan LOD:
+	-- LOCAL/NEAR : semua komponen hidup.
+	-- MID        : tanpa Sound + Light.
+	-- FAR        : tanpa Sound + Light + Beam + Trail, cleanup lebih pendek.
+	local keepSoundLight = lodName == "LOCAL" or lodName == "NEAR"
+	local keepBeamTrail  = lodName ~= "FAR"
+	local emitScale      = getLODEmitScale(lodName)
+
+	if not keepSoundLight then
+		for _, light in ipairs(lights) do light:Destroy() end
+		for _, snd in ipairs(sounds) do snd:Destroy() end
+		table.clear(sounds)
+	end
+	if not keepBeamTrail then
+		for _, beam in ipairs(beams) do beam:Destroy() end
+		for _, trail in ipairs(trails) do trail:Destroy() end
+		table.clear(beams)
+		cleanupTime = math.min(cleanupTime, VFX_FAR_MAX_CLEANUP_TIME)
+	end
+
 	if targetSinker and targetSinker.Parent then
-		for _, descendant in ipairs(vfxClone:GetDescendants()) do
-			if descendant:IsA("Beam") then
-				if not descendant.Attachment0 then
-					local p = descendant.Parent
-					if p:IsA("BasePart") or p:IsA("MeshPart") then
-						descendant.Attachment0 = p:FindFirstChildOfClass("Attachment")
-							or ensureAttachment(p, "BeamSource")
-					end
-				end
-				if not descendant.Attachment1 then
-					descendant.Attachment1 = targetSinker:FindFirstChild("BeamTarget")
-						or targetSinker:FindFirstChildOfClass("Attachment")
-						or ensureAttachment(targetSinker, "BeamTarget")
+		for _, beam in ipairs(beams) do
+			if not beam.Attachment0 then
+				local p = beam.Parent
+				if p and (p:IsA("BasePart") or p:IsA("MeshPart")) then
+					beam.Attachment0 = p:FindFirstChildOfClass("Attachment")
+						or ensureAttachment(p, "BeamSource")
 				end
 			end
-		end
-	end
-	for _, emitter in ipairs(vfxClone:GetDescendants()) do
-		if emitter:IsA("ParticleEmitter") then
-			-- [PERF-4] Skala rate/count untuk efek milik player lain.
-			if emitScale < 1 then
-				emitter.Rate = emitter.Rate * emitScale
-			end
-			local emitCount = emitter:GetAttribute("EmitCount")
-			local emitDelay = emitter:GetAttribute("EmitDelay") or 0
-			local autoEmit  = emitter:GetAttribute("AutoEmit")
-			if autoEmit == true then
-				emitter.Enabled = true
-			elseif emitCount and emitCount > 0 then
-				local scaledCount = math.max(1, math.floor(emitCount * emitScale + 0.5))
-				task.delay(emitDelay, function()
-					if emitter and emitter.Parent then emitter:Emit(scaledCount) end
-				end)
-			else
-				emitter.Enabled = true
-			end
-		elseif emitter:IsA("Sound") then
-			local playDelay = emitter:GetAttribute("PlayDelay") or 0
-			local autoPlay  = emitter:GetAttribute("AutoPlay")
-			if autoPlay == true or autoPlay == nil then
-				if playDelay > 0 then
-					task.delay(playDelay, function()
-						if emitter and emitter.Parent then emitter:Play() end
-					end)
-				else
-					emitter:Play()
-				end
+			if not beam.Attachment1 then
+				beam.Attachment1 = targetSinker:FindFirstChild("BeamTarget")
+					or targetSinker:FindFirstChildOfClass("Attachment")
+					or ensureAttachment(targetSinker, "BeamTarget")
 			end
 		end
 	end
 
-	-- [PERF-5] Cleanup time dari attribute, cache, atau hitung sekali per rod.
-	local cleanupTime = vfxClone:GetAttribute("CleanupTime")
-	if not cleanupTime or cleanupTime <= 0 then
-		cleanupTime = vfxCleanupTimeCache[rodName]
-		if not cleanupTime then
-			cleanupTime = calculateVFXCleanupTime(vfxClone)
-			vfxCleanupTimeCache[rodName] = cleanupTime
+	for _, emitter in ipairs(emitters) do
+		if emitScale < 1 then
+			emitter.Rate = emitter.Rate * emitScale
 		end
-	else
-		cleanupTime = math.clamp(cleanupTime, 0.5, VFX_CONFIG.MAX_CLEANUP_TIME)
+		local emitCount = emitter:GetAttribute("EmitCount")
+		local emitDelay = emitter:GetAttribute("EmitDelay") or 0
+		local autoEmit  = emitter:GetAttribute("AutoEmit")
+		if autoEmit == true then
+			emitter.Enabled = true
+		elseif emitCount and emitCount > 0 then
+			local scaledCount = math.max(1, math.floor(emitCount * emitScale + 0.5))
+			task.delay(emitDelay, function()
+				if emitter and emitter.Parent then emitter:Emit(scaledCount) end
+			end)
+		else
+			emitter.Enabled = true
+		end
 	end
+
+	for _, snd in ipairs(sounds) do
+		local playDelay = snd:GetAttribute("PlayDelay") or 0
+		local autoPlay  = snd:GetAttribute("AutoPlay")
+		if autoPlay == true or autoPlay == nil then
+			if playDelay > 0 then
+				task.delay(playDelay, function()
+					if snd and snd.Parent then snd:Play() end
+				end)
+			else
+				snd:Play()
+			end
+		end
+	end
+
+	activeEffects[ownerPlayer.UserId] = {
+		inst = vfxClone,
+		position = splashPosition,
+		spawnedAt = tick(),
+	}
+	totalActiveVFX += 1
+
+	vfxStats.spawnedTotal += 1
+	if lodName == "LOCAL" then vfxStats.spawnedLocal += 1
+	elseif lodName == "NEAR" then vfxStats.spawnedNear += 1
+	elseif lodName == "MID" then vfxStats.spawnedMid += 1
+	else vfxStats.spawnedFar += 1 end
+
+	local ownerId = ownerPlayer.UserId
 	task.delay(cleanupTime, function()
-		if activeVFXPerPlayer[ownerPlayer.UserId] == vfxClone then
-			activeVFXPerPlayer[ownerPlayer.UserId] = nil
+		local rec = activeEffects[ownerId]
+		if rec and rec.inst == vfxClone then
+			activeEffects[ownerId] = nil
 			totalActiveVFX = math.max(0, totalActiveVFX - 1)
 		end
 	end)
 	Debris:AddItem(vfxClone, cleanupTime)
+
+	debug.profileend()
 	return vfxClone
 end
 
@@ -382,13 +508,11 @@ vfxSplashEvent.OnClientEvent:Connect(function(casterPlayer, rodName, splashPosit
 	if typeof(casterPlayer) ~= "Instance" or not casterPlayer:IsA("Player") then return end
 	if typeof(rodName) ~= "string" or typeof(splashPosition) ~= "Vector3" then return end
 
-	-- [PERF-3] Distance gate untuk efek milik player lain.
-	if casterPlayer ~= player then
-		local myChar = player.Character
-		local myHrp = myChar and myChar:FindFirstChild("HumanoidRootPart")
-		if not myHrp or (myHrp.Position - splashPosition).Magnitude > PERF.NearbyEffectRadius then
-			return
-		end
+	-- [PERF-3] Pilih LOD dari jarak; di luar FarRadius tier → skip.
+	local lodName, distance = selectVFXLOD(casterPlayer, splashPosition)
+	if not lodName then
+		vfxStats.skippedRange += 1
+		return
 	end
 
 	local targetSinker = nil
@@ -397,7 +521,7 @@ vfxSplashEvent.OnClientEvent:Connect(function(casterPlayer, rodName, splashPosit
 	elseif otherPlayersHooks[casterPlayer.UserId] then
 		targetSinker = otherPlayersHooks[casterPlayer.UserId].hook
 	end
-	task.spawn(spawnSplashVFXAtPosition, rodName, splashPosition, targetSinker, casterPlayer)
+	task.spawn(spawnSplashVFXAtPosition, rodName, splashPosition, targetSinker, casterPlayer, lodName, distance)
 end)
 
 local function HasTagSafe(inst, tag)
