@@ -39,7 +39,7 @@ PerfConfig.Quality = {
 		NearEmitMultiplier = 1.0,
 		MidEmitMultiplier = 0.45,
 		FarEmitMultiplier = 0.15,
-		MaxTotalEffects = 10,           -- total splash aktif; saat penuh: efek lokal/terdekat menggusur yang terjauh
+		MaxVfxCost = 450,               -- budget berbobot (bobot = jumlah emitter varian yang di-spawn)
 		VfxCooldown = 0.15,             -- jeda minimum antar splash per caster (dedup "satu cast satu splash")
 		MaxOtherHooks = 4,
 		OtherHookPhysicsInterval = 0.083,
@@ -52,7 +52,7 @@ PerfConfig.Quality = {
 		NearEmitMultiplier = 0.6,
 		MidEmitMultiplier = 0.3,
 		FarEmitMultiplier = 0.1,
-		MaxTotalEffects = 6,
+		MaxVfxCost = 250,
 		VfxCooldown = 0.25,
 		MaxOtherHooks = 3,
 		OtherHookPhysicsInterval = 0.1,
@@ -65,12 +65,30 @@ PerfConfig.Quality = {
 		NearEmitMultiplier = 0.35,
 		MidEmitMultiplier = 0.2,
 		FarEmitMultiplier = 0.08,
-		MaxTotalEffects = 3,
+		MaxVfxCost = 100,
 		VfxCooldown = 0.4,
 		MaxOtherHooks = 2,
 		OtherHookPhysicsInterval = 0.125,
 		OtherHookLandCheckInterval = 0.15,
 	},
+}
+
+-- ═══════════════════════════════════════════════════════════════
+-- VFX TIMELINE RUNNER
+-- ═══════════════════════════════════════════════════════════════
+-- Jumlah emitter visual utama pada prototype FAR per rod (subset, bukan
+-- clone template full 149–201 emitter).
+PerfConfig.FarPrototypeEmitterCount = 6
+
+-- AutoEmit tanpa EmitDuration TIDAK ditebak per emitter. Fallback durasi
+-- (detik) per template; default global untuk template tanpa override.
+-- Daftar asset yang perlu EmitDuration eksplisit di asset (audit):
+--   LavaRod — 149 AutoEmit, mayoritas dari 154 AutoEmit tanpa EmitDuration,
+--   termasuk 5 emitter Rate 50.000. Sebelum di-author, override di sini
+--   membatasi umurnya.
+PerfConfig.AutoEmitFallbackDuration = 2.0
+PerfConfig.AutoEmitDurationOverrides = {
+	LavaRod = 2.0,
 }
 
 -- ═══════════════════════════════════════════════════════════════

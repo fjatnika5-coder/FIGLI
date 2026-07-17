@@ -189,3 +189,61 @@ Template VFX SAMA untuk semua LOD — komponen mahal di-Destroy pada clone, Emit
 - Radius kirim naik 150→350 = lebih banyak penerima per splash; trade-off sengaja: penerima jauh kini memproses versi FAR yang murah (tanpa sound/light/beam/trail, emit ±15%). Kalau Network Receive jadi masalah di server 20+ pemain, turunkan `VfxBroadcastRadius` — client otomatis ikut.
 - Efek skala emit pada template yang HANYA memakai `Enabled=true` (tanpa attribute EmitCount): hanya Rate yang turun; burst instan template semacam itu tidak terpengaruh — tergantung isi asset (tidak dikirim).
 - Belum runtime-test; Luau syntax belum dieksekusi — jalankan di Studio, cek Output bersih dulu.
+
+---
+
+# UPDATE 2 — VFX TIMELINE RUNNER (rebuild executor)
+
+Berdasarkan audit asset: 50 template, 4.955 emitter, 460 AutoEmit, 4.846 EmitDelay, 4.747 EmitDuration, 10 Beam bertiming, 49 root ber-Attribute SFX, template terberat 149–201 emitter, 154 AutoEmit tanpa EmitDuration (mayoritas LavaRod). Radius broadcast + LOD dipertahankan; executor di-rebuild.
+
+## Pemrosesan setiap Attribute
+
+| Attribute | Pada | Diproses menjadi |
+|---|---|---|
+| `EmitDelay` | ParticleEmitter / Beam / Trail | Waktu mulai relatif spawn. Semua komponen `Enabled=false` sebelum container di-Parent; dinyalakan tepat pada t=delay lewat grup jadwal. Default 0 bila absen. |
+| `EmitDuration` | ParticleEmitter (AutoEmit/plain) / Beam / Trail | `Enabled=false` pada t = delay+duration. |
+| `AutoEmit=true` | ParticleEmitter | Window Enabled [delay, delay+duration]. TANPA EmitDuration: TIDAK ditebak per emitter — fallback per template dari `AutoEmitDurationOverrides` (terdokumentasi; LavaRod=2.0) atau `AutoEmitFallbackDuration` (2.0). |
+| `EmitCount>0` | ParticleEmitter | Burst `Emit(count × skala LOD)` tepat pada t=delay (bukan langsung). |
+| emitter tanpa AutoEmit & EmitCount | ParticleEmitter | Window biasa delay + (duration atau fallback) — tidak lagi hidup selamanya. |
+| Beam/Trail tanpa attribute | Beam / Trail | State `Enabled` asli di-capture, dimatikan pre-Parent, dipulihkan pada t=0; mati bersama container. |
+| `PlayDelay` / `AutoPlay` | Sound dalam template | Play terjadwal pada t=PlayDelay; `AutoPlay=false` tidak diputar. Hanya LOCAL/NEAR (MID/FAR: Sound di-destroy). |
+| `SFX` (root) | root template | Nama sound → `SoundManager:Play(nama, 0.5)` saat spawn, LOCAL/NEAR saja. SoundManager kini me-resolve nama apa pun dari `FishingSystem/Assets/Sound` (satu instance ter-manage per nama). Nama yang tidak ada di folder = no-op. |
+| `CleanupTime` (root) | root template | Override umur efek (clamp 0.5–12 s). Tanpa override: `max(delay + duration + lifetime)` dari semua aksi + 0.5 s. |
+| `TimeScale_Duration` | (dipakai formula lama) | TIDAK dipakai lagi — umur dihitung dari formula delay+duration+lifetime sesuai spesifikasi timeline. Kalau attribute ini bermakna di asset, kabari semantiknya. |
+
+## Mekanik runner
+
+- Clone `Parent=nil` → SATU traversal (kumpul aksi + matikan semua + posisi part Folder + destroy Light/Sound per LOD) → attach Beam (list) → hitung cleanup → `Parent=workspace` → jalankan jadwal.
+- Jadwal dikelompokkan per waktu (step 0.05 s): **satu `task.delay` per grup waktu**, bukan per emitter (LavaRod 149 emitter ≈ belasan task, bukan 149+). Grup t≈0 dieksekusi langsung setelah Parent. Semua closure dibatalkan lewat `token.cancelled` saat efek digusur/di-destroy.
+- Timing identik di semua LOD; LOD hanya mengubah skala emit + komponen yang dibuang.
+
+## LOD
+
+- LOCAL/NEAR: full timeline, semua komponen (+SFX).
+- MID: Rate/EmitCount × MidEmitMultiplier, Light+Sound+SFX dibuang, Beam/Trail tetap bertiming, timing sama.
+- FAR: **tidak meng-clone template full** — prototype ringan per rod dibangun SEKALI (`farProtoBuilds` counter): Part invisible + `FarPrototypeEmitterCount` (6) emitter skor tertinggi (heuristik ukuran maksimum × intensitas, Attribute timeline ikut ter-copy), lalu prototype kecil itulah yang di-clone per splash jauh.
+
+## Budget berbobot
+
+`MaxVfxCost` per tier (HIGH 450 / MEDIUM 250 / LOW 100); bobot = jumlah emitter varian yang di-spawn (full = emitter template via metadata cache sekali/rod; FAR = 6). Saat penuh: gusur efek non-lokal terjauh selama pendatang lebih prioritas (LocalPlayer, atau lebih dekat); **efek LocalPlayer selalu tampil** walau harus menggusur semua efek non-lokal. Stats: `activeCost`, `evictedForPriority`, `skippedBudget`.
+
+## Whitelist
+
+Ditambah: DiamonRod, DreadspireRod, EvacoreRod, FrostwindRod, OwnerRod1, OwnerRodsss. Dihapus: LucianRod (template tidak ada di asset).
+
+## File
+
+- GANTI: `StarterPlayer/StarterPlayerScripts/FishingSystem.client.lua` (section VFX → timeline runner).
+- GANTI: `ReplicatedStorage/FishingSystem/FishingPerfConfig.lua` (MaxVfxCost, FarPrototypeEmitterCount, AutoEmitFallbackDuration/Overrides).
+- GANTI: `ReplicatedStorage/FishingSystem/FishingModules/SoundManager.lua` (resolve dinamis nama SFX).
+- Server & module lain: TETAP. Pooling: TETAP TIDAK dibuat (menunggu bukti profiler bahwa Clone masih dominan; FAR proto sudah memangkas clone terbesar).
+
+## Asset yang perlu di-author (tindak lanjut manual)
+
+154 AutoEmit tanpa EmitDuration — mayoritas **LavaRod** (149 AutoEmit, 5 emitter Rate 50.000). Sekarang dibatasi fallback 2.0 s via config; idealnya beri `EmitDuration` eksplisit di asset, terutama kelima emitter Rate 50.000 (dan pertimbangkan menurunkan Rate-nya — Rate 50.000 tetap mahal walau hanya 2 s, terutama LOCAL/NEAR yang tidak diskalakan).
+
+## Kejujuran
+
+- Semantik attribute mengikuti deskripsi audit-mu; belum runtime-test — verifikasi visual timeline (urutan fase efek) di Studio untuk 2–3 rod terberat (LavaRod, template 201 emitter) sebelum publish.
+- Heuristik pemilihan emitter FAR (ukuran × intensitas) bisa salah pilih untuk template tertentu — kalau FAR terlihat aneh pada rod tertentu, naikkan `FarPrototypeEmitterCount` atau kabari nama emitter utamanya untuk dibuat override.
+- SFX 2D via SoundService (SoundManager) — tidak posisional; kalau mau 3D per posisi splash, perlu emitter Sound di part (perubahan lanjutan).

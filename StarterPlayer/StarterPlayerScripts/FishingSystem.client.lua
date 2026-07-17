@@ -14,6 +14,10 @@
 --          maksimal SATU traversal GetDescendants.
 -- [PERF-7] Counter runtime (_G.GetFishingVFXStats) + label MicroProfiler
 --          "FishingSplashVFX" untuk pembuktian.
+-- [PERF-8] VFX Timeline Runner: Attribute timeline asset (EmitDelay/
+--          EmitDuration/AutoEmit/EmitCount/SFX/CleanupTime) dieksekusi benar;
+--          satu task per grup delay; FAR memakai prototype ringan per rod;
+--          budget berbobot jumlah emitter dengan prioritas LocalPlayer.
 -- [PERF-6] Interval simulasi hook player lain + jumlah maksimum hook
 --          mengikuti tier perangkat.
 
@@ -142,28 +146,29 @@ for _, name in ipairs({
 	"Aqua Rod","AdminRod","Celestial Blossom Rod","Slash Katana",
 	"AuraluxRod","Kyouyariin","UmbraluxRod","Cherryna","Nine",
 	"OwnerRod","Vin","Esteh","Mei","Gulabatu","FrozenkRod","x1x1x1 Hammer",
-	"Princess Parasol","AscensionRod","OblivonRod","LucianRod","Jiyu","Solitario","Soya","PASEP","Ceisya",
+	"Princess Parasol","AscensionRod","OblivonRod","Jiyu","Solitario","Soya","PASEP","Ceisya",
+	"DiamonRod","DreadspireRod","EvacoreRod","FrostwindRod","OwnerRod1","OwnerRodsss",
 	"Crescendo Scythe","Wings of Everlove","Aether Monarch","Aurelian Rod","Cupid Harp",
 	"Dark Matter Scythe","Blackhole Sword","The Vanquisher","Eternal Flower","Little","Miyuki"
 	}) do
 	RODS_WITH_SPLASH_SET[name] = true
 end
 
--- [PERF-2] Budget & LOD dari tier perangkat.
-local VFX_DEFAULT_CLEANUP_TIME = 2.0
-local VFX_MOBILE_CLEANUP_TIME  = 1.5
-local VFX_MAX_CLEANUP_TIME     = 8.0
-local VFX_FAR_MAX_CLEANUP_TIME = 3.0
+-- [PERF-2] Budget berbobot & LOD dari tier perangkat.
+local VFX_MAX_CLEANUP_TIME = 12.0
+local VFX_TIME_GROUP_STEP  = 0.05 -- pembulatan waktu timeline → satu task per grup waktu
 
--- [userId] = { inst, position, spawnedAt }
+-- [userId] = { inst, position, cost, token }
 local activeEffects      = {}
-local totalActiveVFX     = 0
+local totalActiveCost    = 0
 local playerVFXLastSpawn = {}
 local otherPlayersHooks  = {}
 local VFX_SPLASH_ENABLED = true
 
--- [PERF-5] Cache metadata template per rod (statis → deterministik).
-local vfxCleanupTimeCache = {}
+-- [PERF-5] Metadata template per rod (sekali per sesi): bobot emitter +
+-- Attribute SFX root. Prototype FAR dibangun sekali per rod.
+local templateMetaCache = {}
+local farProtoCache = {}
 
 -- [PERF-7] Counter runtime untuk pembuktian.
 local vfxStats = {
@@ -176,11 +181,15 @@ local vfxStats = {
 	skippedBudget = 0,
 	duplicateBlocked = 0,
 	evictedForPriority = 0,
+	farProtoBuilds = 0,
 }
 
 _G.GetFishingVFXStats = function()
 	local snapshot = table.clone(vfxStats)
-	snapshot.activeNow = totalActiveVFX
+	snapshot.activeCost = totalActiveCost
+	local activeCount = 0
+	for _ in pairs(activeEffects) do activeCount += 1 end
+	snapshot.activeNow = activeCount
 	snapshot.quality = PerfConfig.GetQualityName()
 	return snapshot
 end
@@ -189,10 +198,11 @@ _G.SetSplashVFXEnabled = function(enabled)
 	VFX_SPLASH_ENABLED = enabled
 	if not enabled then
 		for _, rec in pairs(activeEffects) do
+			rec.token.cancelled = true
 			if rec.inst and rec.inst.Parent then rec.inst:Destroy() end
 		end
 		table.clear(activeEffects)
-		totalActiveVFX = 0
+		totalActiveCost = 0
 	end
 end
 _G.GetSplashVFXEnabled = function() return VFX_SPLASH_ENABLED end
@@ -232,7 +242,8 @@ local function destroyEffectRecord(userId)
 	local rec = activeEffects[userId]
 	if not rec then return end
 	activeEffects[userId] = nil
-	totalActiveVFX = math.max(0, totalActiveVFX - 1)
+	totalActiveCost = math.max(0, totalActiveCost - rec.cost)
+	rec.token.cancelled = true
 	if rec.inst and rec.inst.Parent then
 		rec.inst:Destroy()
 	end
@@ -242,12 +253,13 @@ local function cleanupPlayerVFX(playerId)
 	destroyEffectRecord(playerId)
 end
 
--- [PERF-4] Reservasi budget:
+-- [PERF-4] Budget BERBOBOT (bobot = jumlah emitter varian yang di-spawn):
 -- - Cooldown per caster = dedup event → satu cast satu splash.
 -- - Per caster maksimal satu efek aktif (yang baru menggantikan miliknya).
--- - Saat budget total penuh: efek LocalPlayer atau efek yang lebih dekat
---   menggusur efek non-lokal TERJAUH; selain itu ditolak.
-local function tryReserveVFXBudget(ownerUserId, isLocalOwner, distance)
+-- - Saat budget penuh: efek non-lokal TERJAUH digusur selama pendatang lebih
+--   prioritas (LocalPlayer, atau lebih dekat). Efek LocalPlayer SELALU tampil
+--   walau budget habis oleh efeknya sendiri.
+local function tryReserveVFXBudget(ownerUserId, isLocalOwner, distance, cost)
 	if not isVFXAllowed() then return false end
 
 	local now = tick()
@@ -260,24 +272,33 @@ local function tryReserveVFXBudget(ownerUserId, isLocalOwner, distance)
 		destroyEffectRecord(ownerUserId)
 	end
 
-	if totalActiveVFX >= PERF.MaxTotalEffects then
+	local maxCost = PERF.MaxVfxCost
+	if totalActiveCost + cost > maxCost then
 		local myPos = getLocalHrpPosition()
-		local farthestId, farthestDist = nil, -1
-		for uid, rec in pairs(activeEffects) do
-			if uid ~= player.UserId then
-				local d = myPos and (myPos - rec.position).Magnitude or math.huge
-				if d > farthestDist then
-					farthestDist = d
-					farthestId = uid
+		while totalActiveCost + cost > maxCost do
+			local farthestId, farthestDist = nil, -1
+			for uid, rec in pairs(activeEffects) do
+				if uid ~= player.UserId then
+					local d = myPos and (myPos - rec.position).Magnitude or math.huge
+					if d > farthestDist then
+						farthestDist = d
+						farthestId = uid
+					end
 				end
 			end
-		end
-		if farthestId and (isLocalOwner or distance < farthestDist) then
-			destroyEffectRecord(farthestId)
-			vfxStats.evictedForPriority += 1
-		else
-			vfxStats.skippedBudget += 1
-			return false
+			if not farthestId then
+				-- Tersisa hanya efek lokal; efek lokal baru tetap boleh tampil.
+				if isLocalOwner then break end
+				vfxStats.skippedBudget += 1
+				return false
+			end
+			if isLocalOwner or distance < farthestDist then
+				destroyEffectRecord(farthestId)
+				vfxStats.evictedForPriority += 1
+			else
+				vfxStats.skippedBudget += 1
+				return false
+			end
 		end
 	end
 
@@ -303,40 +324,82 @@ local function getMaxLifetime(emitter)
 	return 1.0
 end
 
--- [PERF-5] Dihitung dari list hasil traversal tunggal, bukan traversal baru.
-local function computeCleanupTimeFromLists(emitters, sounds)
-	local maxTime, hasEmitter = 0, false
-	for _, desc in ipairs(emitters) do
-		hasEmitter = true
-		local emitDelay    = desc:GetAttribute("EmitDelay") or 0
-		local emitDuration = desc:GetAttribute("EmitDuration") or 0
-		local autoEmit     = desc:GetAttribute("AutoEmit")
-		local emitCount    = desc:GetAttribute("EmitCount")
-		local maxLifetime  = getMaxLifetime(desc)
-		local timeScaleDur = desc:GetAttribute("TimeScale_Duration") or 0
-		local endTime = 0
-		if autoEmit == true then
-			endTime = emitDuration > 0
-				and (emitDelay + emitDuration + maxLifetime)
-				or  (emitDelay + VFX_DEFAULT_CLEANUP_TIME)
-		elseif emitCount and emitCount > 0 then
-			endTime = emitDelay + maxLifetime
-		else
-			endTime = emitDelay + VFX_DEFAULT_CLEANUP_TIME
+-- [PERF-5] Metadata sekali per rod: bobot (jumlah emitter) + Attribute SFX root.
+local function getTemplateMeta(rodName, template)
+	local meta = templateMetaCache[rodName]
+	if meta then return meta end
+	local count = 0
+	for _, desc in ipairs(template:GetDescendants()) do
+		if desc:IsA("ParticleEmitter") then count += 1 end
+	end
+	local sfx = template:GetAttribute("SFX")
+	meta = {
+		cost = math.max(1, count),
+		sfx = (typeof(sfx) == "string" and sfx ~= "") and sfx or nil,
+	}
+	templateMetaCache[rodName] = meta
+	return meta
+end
+
+-- AutoEmit tanpa EmitDuration TIDAK ditebak per emitter: fallback per template
+-- dari config (AutoEmitDurationOverrides), default AutoEmitFallbackDuration.
+local function getAutoEmitFallbackDuration(rodName)
+	local overrides = PerfConfig.AutoEmitDurationOverrides
+	local v = overrides and overrides[rodName]
+	return tonumber(v) or PerfConfig.AutoEmitFallbackDuration or 2.0
+end
+
+-- Skor heuristik emitter untuk prototype FAR: ukuran maksimum × intensitas.
+local function getEmitterScore(emitter)
+	local sizeMax = 0
+	local ok, size = pcall(function() return emitter.Size end)
+	if ok and typeof(size) == "NumberSequence" then
+		for _, kp in ipairs(size.Keypoints) do
+			if kp.Value > sizeMax then sizeMax = kp.Value end
 		end
-		endTime = endTime + timeScaleDur
-		if endTime > maxTime then maxTime = endTime end
 	end
-	for _, snd in ipairs(sounds) do
-		local soundEnd = (snd:GetAttribute("PlayDelay") or 0) + (snd.TimeLength or 0)
-		if soundEnd > maxTime then maxTime = soundEnd end
+	local intensity = emitter:GetAttribute("EmitCount") or emitter.Rate or 1
+	return (sizeMax + 0.1) * (intensity + 1)
+end
+
+-- [PERF-8] Prototype FAR: dibangun SEKALI per rod dari subset emitter visual
+-- utama (FarPrototypeEmitterCount), lalu di-clone murah (belasan instance)
+-- untuk setiap splash jauh — bukan clone template full 149–201 emitter.
+local function getFarPrototype(rodName, template)
+	local cached = farProtoCache[rodName]
+	if cached then return cached end
+
+	local temp = template:Clone()
+	local emitters = {}
+	for _, desc in ipairs(temp:GetDescendants()) do
+		if desc:IsA("ParticleEmitter") then
+			emitters[#emitters + 1] = desc
+		end
 	end
-	if not hasEmitter then
-		return isMobile and VFX_MOBILE_CLEANUP_TIME or VFX_DEFAULT_CLEANUP_TIME
+	table.sort(emitters, function(a, b)
+		return getEmitterScore(a) > getEmitterScore(b)
+	end)
+
+	local proto = Instance.new("Part")
+	proto.Name = "FarProto_" .. rodName
+	proto.Anchored = true
+	proto.CanCollide = false
+	proto.CanQuery = false
+	proto.CanTouch = false
+	proto.Transparency = 1
+	proto.Size = Vector3.new(1, 1, 1)
+
+	local n = math.min(PerfConfig.FarPrototypeEmitterCount or 6, #emitters)
+	for i = 1, n do
+		local c = emitters[i]:Clone() -- Attribute timeline ikut ter-copy
+		c.Enabled = false
+		c.Parent = proto
 	end
-	local result = math.clamp(maxTime + 0.5, 0.5, VFX_MAX_CLEANUP_TIME)
-	if isMobile then result = math.max(0.5, result * 0.8) end
-	return result
+	temp:Destroy()
+
+	farProtoCache[rodName] = proto
+	vfxStats.farProtoBuilds += 1
+	return proto
 end
 
 local VFX_LIGHT_CLASSES = { PointLight = true, SpotLight = true, SurfaceLight = true }
@@ -348,6 +411,130 @@ local function getLODEmitScale(lodName)
 	return PERF.FarEmitMultiplier
 end
 
+-- ═══════════════════════════════════════════════════════════════
+-- [PERF-8] VFX TIMELINE RUNNER
+-- Pemrosesan Attribute (SATU traversal per clone; semua komponen
+-- dimatikan sebelum container di-Parent):
+--   EmitDelay (emitter/Beam/Trail) : waktu mulai relatif spawn.
+--   EmitDuration                   : lama aktif; Enabled=false setelahnya.
+--   AutoEmit=true                  : window Enabled [delay, delay+duration];
+--                                    tanpa EmitDuration → fallback config.
+--   EmitCount>0                    : burst Emit(count×skala LOD) pada t=delay.
+--   Emitter tanpa AutoEmit/EmitCount : window biasa (delay + duration/fallback).
+--   Beam/Trail tanpa attribute     : state Enabled asli dipulihkan pada t=0.
+--   Sound PlayDelay/AutoPlay       : Play terjadwal (LOCAL/NEAR saja).
+--   CleanupTime (root)             : override umur efek.
+--   SFX (root)                     : nama sound → SoundManager (LOCAL/NEAR).
+-- Grup waktu 0.05 s → SATU task.delay per grup waktu, bukan per emitter.
+-- Timing identik di semua LOD; LOD hanya mengubah skala & komponen.
+-- ═══════════════════════════════════════════════════════════════
+local function buildTimeline(container, rodName, lodName, emitScale, folderPivot, splashPosition)
+	local schedule = {}
+	local attachBeams = {}
+	local maxEnd = 0
+	local fallbackDuration = getAutoEmitFallbackDuration(rodName)
+	local keepSoundLight = lodName == "LOCAL" or lodName == "NEAR"
+	local toDestroy = {}
+
+	local function at(t, fn)
+		if t < 0 then t = 0 end
+		local key = math.floor(t / VFX_TIME_GROUP_STEP + 0.5)
+		local bucket = schedule[key]
+		if not bucket then
+			bucket = {}
+			schedule[key] = bucket
+		end
+		bucket[#bucket + 1] = fn
+	end
+
+	local function scheduleWindow(inst, delay, duration, lifetime)
+		at(delay, function() inst.Enabled = true end)
+		at(delay + duration, function() inst.Enabled = false end)
+		local endT = delay + duration + (lifetime or 0)
+		if endT > maxEnd then maxEnd = endT end
+	end
+
+	for _, desc in ipairs(container:GetDescendants()) do
+		if desc:IsA("ParticleEmitter") then
+			local delay     = desc:GetAttribute("EmitDelay") or 0
+			local duration  = desc:GetAttribute("EmitDuration")
+			local autoEmit  = desc:GetAttribute("AutoEmit") == true
+			local emitCount = desc:GetAttribute("EmitCount")
+			local lifetime  = getMaxLifetime(desc)
+			if emitScale < 1 then
+				desc.Rate = desc.Rate * emitScale
+			end
+			desc.Enabled = false
+			if autoEmit then
+				scheduleWindow(desc, delay, duration or fallbackDuration, lifetime)
+			elseif emitCount and emitCount > 0 then
+				local scaled = math.max(1, math.floor(emitCount * emitScale + 0.5))
+				at(delay, function() desc:Emit(scaled) end)
+				local endT = delay + lifetime
+				if endT > maxEnd then maxEnd = endT end
+			else
+				scheduleWindow(desc, delay, duration or fallbackDuration, lifetime)
+			end
+		elseif desc:IsA("Beam") or desc:IsA("Trail") then
+			local delay      = desc:GetAttribute("EmitDelay")
+			local duration   = desc:GetAttribute("EmitDuration")
+			local wasEnabled = desc.Enabled
+			desc.Enabled = false
+			if desc:IsA("Beam") then
+				attachBeams[#attachBeams + 1] = desc
+			end
+			if delay ~= nil or duration ~= nil then
+				scheduleWindow(desc, delay or 0, duration or fallbackDuration, 0)
+			elseif wasEnabled then
+				at(0, function() desc.Enabled = true end)
+			end
+		elseif VFX_LIGHT_CLASSES[desc.ClassName] then
+			if not keepSoundLight then
+				toDestroy[#toDestroy + 1] = desc
+			end
+		elseif desc:IsA("Sound") then
+			if not keepSoundLight then
+				toDestroy[#toDestroy + 1] = desc
+			else
+				local playDelay = desc:GetAttribute("PlayDelay") or 0
+				local autoPlay  = desc:GetAttribute("AutoPlay")
+				if autoPlay == true or autoPlay == nil then
+					at(playDelay, function() desc:Play() end)
+					local endT = playDelay + (desc.TimeLength or 0)
+					if endT > maxEnd then maxEnd = endT end
+				end
+			end
+		elseif folderPivot and desc:IsA("BasePart") then
+			desc.Position = splashPosition + (desc.Position - folderPivot.Position)
+		end
+	end
+
+	for _, inst in ipairs(toDestroy) do
+		inst:Destroy()
+	end
+
+	return schedule, attachBeams, maxEnd
+end
+
+local function runTimeline(schedule, container, token)
+	for key, bucket in pairs(schedule) do
+		local t = key * VFX_TIME_GROUP_STEP
+		if t <= 0.001 then
+			for _, fn in ipairs(bucket) do
+				pcall(fn)
+			end
+		else
+			task.delay(t, function()
+				if token.cancelled then return end
+				if not container.Parent then return end
+				for _, fn in ipairs(bucket) do
+					pcall(fn)
+				end
+			end)
+		end
+	end
+end
+
 local function spawnSplashVFXAtPosition(rodName, splashPosition, targetSinker, ownerPlayer, lodName, distance)
 	if not ownerPlayer then return nil end
 	if not RODS_WITH_SPLASH_SET[rodName] then return nil end
@@ -356,79 +543,48 @@ local function spawnSplashVFXAtPosition(rodName, splashPosition, targetSinker, o
 
 	local isLocalOwner = ownerPlayer == player
 	lodName = lodName or (isLocalOwner and "LOCAL" or "NEAR")
-	if not tryReserveVFXBudget(ownerPlayer.UserId, isLocalOwner, distance or 0) then return nil end
+	local isFar = lodName == "FAR"
+
+	local meta = getTemplateMeta(rodName, vfxTemplate)
+	local cost = isFar
+		and math.min(PerfConfig.FarPrototypeEmitterCount or 6, meta.cost)
+		or meta.cost
+	if not tryReserveVFXBudget(ownerPlayer.UserId, isLocalOwner, distance or 0, cost) then return nil end
 
 	debug.profilebegin("FishingSplashVFX")
 
-	local vfxClone = vfxTemplate:Clone()
-	vfxClone.Name = "VFX_" .. rodName .. "_" .. ownerPlayer.Name
-	vfxClone:SetAttribute("IsSplashVFX", true)
-	vfxClone.Parent = workspace
-	if vfxClone:IsA("Model") then
-		if vfxClone.PrimaryPart then
-			vfxClone:SetPrimaryPartCFrame(CFrame.new(splashPosition))
-		else
-			vfxClone:MoveTo(splashPosition)
-		end
-	elseif vfxClone:IsA("BasePart") then
-		vfxClone.CFrame = CFrame.new(splashPosition)
-	end
-
-	-- [PERF-5] SATU traversal per clone: kumpulkan semua instance sekali.
-	-- Posisi child Folder juga ditangani di pass yang sama.
-	local isFolder = vfxClone:IsA("Folder")
-	local folderPivot = isFolder and vfxClone:GetPivot() or nil
-	local emitters, sounds, beams, trails, lights = {}, {}, {}, {}, {}
-	for _, desc in ipairs(vfxClone:GetDescendants()) do
-		if desc:IsA("ParticleEmitter") then
-			emitters[#emitters + 1] = desc
-		elseif desc:IsA("Sound") then
-			sounds[#sounds + 1] = desc
-		elseif desc:IsA("Beam") then
-			beams[#beams + 1] = desc
-		elseif desc:IsA("Trail") then
-			trails[#trails + 1] = desc
-		elseif VFX_LIGHT_CLASSES[desc.ClassName] then
-			lights[#lights + 1] = desc
-		elseif isFolder and desc:IsA("BasePart") then
-			desc.Position = splashPosition + (desc.Position - folderPivot.Position)
-		end
-	end
-
-	-- Metadata cleanup time: attribute > cache per rod > hitung dari list.
-	local cleanupTime = vfxClone:GetAttribute("CleanupTime")
-	if cleanupTime and cleanupTime > 0 then
-		cleanupTime = math.clamp(cleanupTime, 0.5, VFX_MAX_CLEANUP_TIME)
+	-- Clone dengan Parent=nil; seluruh konfigurasi selesai sebelum tampil.
+	local container
+	local folderPivot = nil
+	if isFar then
+		-- [PERF-8] FAR tidak meng-clone template full 149–201 emitter.
+		container = getFarPrototype(rodName, vfxTemplate):Clone()
+		container.Position = splashPosition
 	else
-		cleanupTime = vfxCleanupTimeCache[rodName]
-		if not cleanupTime then
-			cleanupTime = computeCleanupTimeFromLists(emitters, sounds)
-			vfxCleanupTimeCache[rodName] = cleanupTime
+		container = vfxTemplate:Clone()
+		if container:IsA("Model") then
+			if container.PrimaryPart then
+				container:SetPrimaryPartCFrame(CFrame.new(splashPosition))
+			else
+				container:MoveTo(splashPosition)
+			end
+		elseif container:IsA("BasePart") then
+			container.CFrame = CFrame.new(splashPosition)
+		else
+			local ok, pivot = pcall(container.GetPivot, container)
+			folderPivot = ok and pivot or nil
 		end
 	end
+	container.Name = "VFX_" .. rodName .. "_" .. ownerPlayer.Name
+	container:SetAttribute("IsSplashVFX", true)
 
-	-- [PERF-3] Aturan LOD:
-	-- LOCAL/NEAR : semua komponen hidup.
-	-- MID        : tanpa Sound + Light.
-	-- FAR        : tanpa Sound + Light + Beam + Trail, cleanup lebih pendek.
-	local keepSoundLight = lodName == "LOCAL" or lodName == "NEAR"
-	local keepBeamTrail  = lodName ~= "FAR"
-	local emitScale      = getLODEmitScale(lodName)
-
-	if not keepSoundLight then
-		for _, light in ipairs(lights) do light:Destroy() end
-		for _, snd in ipairs(sounds) do snd:Destroy() end
-		table.clear(sounds)
-	end
-	if not keepBeamTrail then
-		for _, beam in ipairs(beams) do beam:Destroy() end
-		for _, trail in ipairs(trails) do trail:Destroy() end
-		table.clear(beams)
-		cleanupTime = math.min(cleanupTime, VFX_FAR_MAX_CLEANUP_TIME)
-	end
+	local emitScale = getLODEmitScale(lodName)
+	local token = { cancelled = false }
+	local schedule, attachBeams, maxEnd =
+		buildTimeline(container, rodName, lodName, emitScale, folderPivot, splashPosition)
 
 	if targetSinker and targetSinker.Parent then
-		for _, beam in ipairs(beams) do
+		for _, beam in ipairs(attachBeams) do
 			if not beam.Attachment0 then
 				local p = beam.Parent
 				if p and (p:IsA("BasePart") or p:IsA("MeshPart")) then
@@ -444,45 +600,29 @@ local function spawnSplashVFXAtPosition(rodName, splashPosition, targetSinker, o
 		end
 	end
 
-	for _, emitter in ipairs(emitters) do
-		if emitScale < 1 then
-			emitter.Rate = emitter.Rate * emitScale
-		end
-		local emitCount = emitter:GetAttribute("EmitCount")
-		local emitDelay = emitter:GetAttribute("EmitDelay") or 0
-		local autoEmit  = emitter:GetAttribute("AutoEmit")
-		if autoEmit == true then
-			emitter.Enabled = true
-		elseif emitCount and emitCount > 0 then
-			local scaledCount = math.max(1, math.floor(emitCount * emitScale + 0.5))
-			task.delay(emitDelay, function()
-				if emitter and emitter.Parent then emitter:Emit(scaledCount) end
-			end)
-		else
-			emitter.Enabled = true
-		end
+	-- Cleanup = max(delay + duration + lifetime); root CleanupTime = override.
+	local cleanupTime = container:GetAttribute("CleanupTime") or vfxTemplate:GetAttribute("CleanupTime")
+	if cleanupTime and cleanupTime > 0 then
+		cleanupTime = math.clamp(cleanupTime, 0.5, VFX_MAX_CLEANUP_TIME)
+	else
+		cleanupTime = math.clamp(maxEnd + 0.5, 0.5, VFX_MAX_CLEANUP_TIME)
 	end
 
-	for _, snd in ipairs(sounds) do
-		local playDelay = snd:GetAttribute("PlayDelay") or 0
-		local autoPlay  = snd:GetAttribute("AutoPlay")
-		if autoPlay == true or autoPlay == nil then
-			if playDelay > 0 then
-				task.delay(playDelay, function()
-					if snd and snd.Parent then snd:Play() end
-				end)
-			else
-				snd:Play()
-			end
-		end
+	container.Parent = workspace
+	runTimeline(schedule, container, token)
+
+	-- SFX root via SoundManager (hanya LOCAL/NEAR; MID/FAR tanpa SFX).
+	if meta.sfx and (lodName == "LOCAL" or lodName == "NEAR") then
+		SoundManager:Play(meta.sfx, 0.5)
 	end
 
 	activeEffects[ownerPlayer.UserId] = {
-		inst = vfxClone,
+		inst = container,
 		position = splashPosition,
-		spawnedAt = tick(),
+		cost = cost,
+		token = token,
 	}
-	totalActiveVFX += 1
+	totalActiveCost += cost
 
 	vfxStats.spawnedTotal += 1
 	if lodName == "LOCAL" then vfxStats.spawnedLocal += 1
@@ -493,15 +633,16 @@ local function spawnSplashVFXAtPosition(rodName, splashPosition, targetSinker, o
 	local ownerId = ownerPlayer.UserId
 	task.delay(cleanupTime, function()
 		local rec = activeEffects[ownerId]
-		if rec and rec.inst == vfxClone then
+		if rec and rec.inst == container then
 			activeEffects[ownerId] = nil
-			totalActiveVFX = math.max(0, totalActiveVFX - 1)
+			totalActiveCost = math.max(0, totalActiveCost - rec.cost)
+			rec.token.cancelled = true
 		end
 	end)
-	Debris:AddItem(vfxClone, cleanupTime)
+	Debris:AddItem(container, cleanupTime)
 
 	debug.profileend()
-	return vfxClone
+	return container
 end
 
 vfxSplashEvent.OnClientEvent:Connect(function(casterPlayer, rodName, splashPosition)
