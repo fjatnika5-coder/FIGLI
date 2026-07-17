@@ -389,11 +389,37 @@ local function getFarPrototype(rodName, template)
 	proto.Transparency = 1
 	proto.Size = Vector3.new(1, 1, 1)
 
+	-- [FIX-ATT] Emitter yang menempel pada Attachment kehilangan posisi/
+	-- orientasi bila di-parent langsung ke Part. Buat Attachment padanan
+	-- (dedup per Attachment asli) dengan CFrame relatif pivot template.
+	local okPivot, tempPivot = pcall(temp.GetPivot, temp)
+	local attachmentMap = {}
+	local function getProtoAttachment(origAtt)
+		local existing = attachmentMap[origAtt]
+		if existing then return existing end
+		local att = Instance.new("Attachment")
+		att.Name = origAtt.Name
+		if okPivot and tempPivot then
+			local okCf, worldCf = pcall(function() return origAtt.WorldCFrame end)
+			att.CFrame = (okCf and worldCf) and tempPivot:ToObjectSpace(worldCf) or origAtt.CFrame
+		else
+			att.CFrame = origAtt.CFrame
+		end
+		att.Parent = proto
+		attachmentMap[origAtt] = att
+		return att
+	end
+
 	local n = math.min(PerfConfig.FarPrototypeEmitterCount or 6, #emitters)
 	for i = 1, n do
-		local c = emitters[i]:Clone() -- Attribute timeline ikut ter-copy
+		local orig = emitters[i]
+		local c = orig:Clone() -- Attribute timeline ikut ter-copy
 		c.Enabled = false
-		c.Parent = proto
+		if orig.Parent and orig.Parent:IsA("Attachment") then
+			c.Parent = getProtoAttachment(orig.Parent)
+		else
+			c.Parent = proto
+		end
 	end
 	temp:Destroy()
 
@@ -461,19 +487,22 @@ local function buildTimeline(container, rodName, lodName, emitScale, folderPivot
 			local autoEmit  = desc:GetAttribute("AutoEmit") == true
 			local emitCount = desc:GetAttribute("EmitCount")
 			local lifetime  = getMaxLifetime(desc)
+			-- [FIX-TS] TimeScale_Duration ikut umur efek (cleanup saja;
+			-- tidak menyentuh Rate/EmitCount/timing delay-duration).
+			local timeScaleDur = desc:GetAttribute("TimeScale_Duration") or 0
 			if emitScale < 1 then
 				desc.Rate = desc.Rate * emitScale
 			end
 			desc.Enabled = false
 			if autoEmit then
-				scheduleWindow(desc, delay, duration or fallbackDuration, lifetime)
+				scheduleWindow(desc, delay, duration or fallbackDuration, lifetime + timeScaleDur)
 			elseif emitCount and emitCount > 0 then
 				local scaled = math.max(1, math.floor(emitCount * emitScale + 0.5))
 				at(delay, function() desc:Emit(scaled) end)
-				local endT = delay + lifetime
+				local endT = delay + lifetime + timeScaleDur
 				if endT > maxEnd then maxEnd = endT end
 			else
-				scheduleWindow(desc, delay, duration or fallbackDuration, lifetime)
+				scheduleWindow(desc, delay, duration or fallbackDuration, lifetime + timeScaleDur)
 			end
 		elseif desc:IsA("Beam") or desc:IsA("Trail") then
 			local delay      = desc:GetAttribute("EmitDelay")
@@ -950,6 +979,9 @@ local autoButtonConn = nil
 local function initializeSystems()
 	SoundManager:Initialize()
 	GUIManager:Initialize(player)
+	-- [FIX-AUTO] Set teks tombol Auto sesuai state SEKARANG, tepat setelah
+	-- referensi GUI valid — jangan menunggu klik pertama.
+	GUIManager:UpdateAutoButton(gameState.isAutoFishing)
 	if autoButtonConn then autoButtonConn:Disconnect(); autoButtonConn = nil end
 	local autoButton = GUIManager:GetElement("autoButton")
 	if autoButton then
@@ -1531,6 +1563,8 @@ function onRodEquipped(rod)
 	AnimationController:Reload(humanoid)
 	AnimationController:PlayIdleSequence()
 	GUIManager:ShowAutoButton(true)
+	-- [FIX-AUTO] Teks benar saat tombol pertama kali tampil.
+	GUIManager:UpdateAutoButton(gameState.isAutoFishing)
 	if isMobile then
 		GUIManager:ShowMobileButton(true)
 		updateMobileButtonText()

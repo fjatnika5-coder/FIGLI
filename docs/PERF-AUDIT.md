@@ -247,3 +247,21 @@ Ditambah: DiamonRod, DreadspireRod, EvacoreRod, FrostwindRod, OwnerRod1, OwnerRo
 - Semantik attribute mengikuti deskripsi audit-mu; belum runtime-test — verifikasi visual timeline (urutan fase efek) di Studio untuk 2–3 rod terberat (LavaRod, template 201 emitter) sebelum publish.
 - Heuristik pemilihan emitter FAR (ukuran × intensitas) bisa salah pilih untuk template tertentu — kalau FAR terlihat aneh pada rod tertentu, naikkan `FarPrototypeEmitterCount` atau kabari nama emitter utamanya untuk dibuat override.
 - SFX 2D via SoundService (SoundManager) — tidak posisional; kalau mau 3D per posisi splash, perlu emitter Sound di part (perubahan lanjutan).
+
+---
+
+# UPDATE 3 — Tiga patch kecil (arsitektur/LOD/balancing TIDAK berubah)
+
+**1. TimeScale_Duration diproses lagi** (`FishingSystem.client.lua`, buildTimeline): nilainya ditambahkan ke perhitungan `maxEnd`/cleanup (window & burst) sehingga efek tidak di-destroy sebelum fase TimeScale selesai. Rate, EmitCount, dan timing EmitDelay/EmitDuration tidak disentuh.
+
+**2. FAR prototype mempertahankan Attachment** (`getFarPrototype`): emitter yang parent-nya Attachment kini di-parent ke Attachment padanan pada proto — dibuat sekali per Attachment asli (dedup via map), Name di-copy, CFrame = WorldCFrame attachment relatif pivot template (fallback CFrame lokal bila pivot tidak tersedia). Posisi/orientasi emisi FAR kembali benar.
+
+**3. Bug tombol Auto Fishing "Label" pada equip pertama setelah join.**
+Penyebab pasti (dari source): jalur inisialisasi AWAL script (`initializeSystems()` di baris start) TIDAK pernah memanggil `UpdateAutoButton` — hanya jalur `CharacterAdded` (respawn) yang memanggilnya. Kalau `AutoButton` sudah ada di FishingGui (clone StarterGui) dengan TextLabel berteks default "Label", `getOrCreateAutoButton` hanya menimpa teks bila `Text == ""` → "Label" bertahan sampai klik pertama (callback klik memanggil UpdateAutoButton) atau respawn pertama. Persis gejala: hanya equip pertama setelah join.
+Patch minimal:
+- `initializeSystems()`: `GUIManager:UpdateAutoButton(gameState.isAutoFishing)` tepat setelah `GUIManager:Initialize(player)` — teks benar begitu referensi GUI valid, tanpa menunggu klik.
+- `onRodEquipped()`: `UpdateAutoButton(gameState.isAutoFishing)` setelah `ShowAutoButton(true)` — teks dijamin benar setiap kali tombol tampil.
+- `GUIManager.getOrCreateAutoButton`: bila TextLabel designer TIDAK bernama "Text", label itu DIADOPSI (rename ke "Text") alih-alih membuat TextLabel kedua yang bertumpuk — memastikan `UpdateAutoButton` menulis ke label yang benar-benar tampil (satu label, tidak ada yang tertukar). Desain/ukuran/warna/posisi tidak diubah.
+Aman untuk respawn/ResetOnSpawn: CharacterAdded → initializeSystems (kini ikut set teks) → UpdateAutoButton(false) eksisting tetap.
+
+File berubah: `StarterPlayer/StarterPlayerScripts/FishingSystem.client.lua`, `ReplicatedStorage/FishingSystem/FishingModules/GUIManager.lua`. Lainnya tetap.
